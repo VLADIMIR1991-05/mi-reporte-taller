@@ -3,13 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Validador de Despiece</title>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <style>
-        /* ========================================== */
-        /* SECCIÓN 1: DISEÑO Y ESTILOS (CSS)          */
-        /* ========================================== */
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
         .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -46,9 +41,6 @@
     <div id="lista"></div>
 
     <script>
-        /* ========================================== */
-        /* SECCIÓN 3: CARGA Y LECTURA DE ARCHIVO      */
-        /* ========================================== */
         document.getElementById('upload').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = function(event) {
@@ -59,9 +51,6 @@
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        /* ========================================== */
-        /* SECCIÓN 4: PROCESAMIENTO Y RENDERIZADO     */
-        /* ========================================== */
         function renderizar(data) {
             let lista = document.getElementById('lista');
             lista.innerHTML = "";
@@ -100,9 +89,6 @@
             });
         }
 
-        /* ========================================== */
-        /* SECCIÓN 5: FILTRADO DINÁMICO UNIVERSAL     */
-        /* ========================================== */
         function filtrar() {
             let inputs = document.querySelectorAll('.f-input');
             let valores = Array.from(inputs).map(i => i.value.toUpperCase());
@@ -114,9 +100,6 @@
             });
         }
 
-        /* ========================================== */
-        /* SECCIÓN 6: LÓGICA DE VALIDACIÓN            */
-        /* ========================================== */
         function validarTodo() {
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let ancho = parseInt(div.dataset.ancho);
