@@ -1,125 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte de Producción</title>
+    <title>Validador de Despiece</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial; padding: 20px; background-color: #f4f4f9; }
-        .panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .f-input { padding: 10px; border: 2px solid #2c3e50; border-radius: 4px; }
-        .mueble-container { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; }
-        .esp { border-left: 5px solid #e67e22; background-color: #fff3cd; }
-        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; font-size: 13px; }
-        .err { background-color: #ffb3b3 !important; }
-        .ok { background-color: #b3ffb3 !important; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        
+        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .f-input { padding: 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px; }
+        
+        button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2980b9; }
+
+        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
+        .mueble-container.esp { border-left-color: #e67e22; background: #fffdf9; }
+        .mueble-container h2 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.2em; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f8f9fa; color: #666; font-size: 11px; padding: 10px; text-transform: uppercase; }
+        td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px; }
+        
+        .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
+        .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
     </style>
 </head>
 <body>
-    <h1>Reporte de Producción</h1>
-    <input type="file" id="upload" accept=".xlsx, .csv">
-    <div class="panel" style="margin-top:20px;">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 1...">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 2..."><!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Reporte de Producción</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: Arial; padding: 20px; background-color: #f4f4f9; }
-        .panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .f-input { padding: 10px; border: 2px solid #2c3e50; border-radius: 4px; width: 90%; }
-        .mueble-container { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; }
-        .esp { border-left: 5px solid #e67e22; background-color: #fff3cd; }
-        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; font-size: 13px; }
-        .err { background-color: #ffb3b3 !important; }
-        .ok { background-color: #b3ffb3 !important; }
-    </style>
-</head>
-<body>
-    <h1>Reporte de Producción</h1>
-    <input type="file" id="upload" accept=".xlsx, .csv">
-    <div class="panel" style="margin-top:20px;">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 1...">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 2...">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 3...">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 4...">
-    </div>
-    <button onclick="validarTodo()" style="padding:10px; cursor:pointer;">VALIDAR MEDIDAS</button>
-    <div id="lista"></div>
 
-    <script>
-        document.getElementById('upload').addEventListener('change', function(e) {
-            let reader = new FileReader();
-            reader.onload = function(event) {
-                let wb = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
-                let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                renderizar(json);
-            };
-            reader.readAsArrayBuffer(e.target.files[0]);
-        });
+<div class="header">
+    <h1>Validador de Despiece</h1>
+    <input type="file" id="upload" accept=".xlsx, .csv">
+</div>
 
-        function renderizar(data) {
-            let lista = document.getElementById('lista');
-            lista.innerHTML = "";
-            let colLetras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+<div class="controls">
+    <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtrar (OP, Código, Pieza...)">
+    <button onclick="validarTodo()">VALIDAR MEDIDAS</button>
+</div>
+
+<div id="lista"></div>
+
+<script>
+    document.getElementById('upload').addEventListener('change', function(e) {
+        let reader = new FileReader();
+        reader.onload = function(event) {
+            let wb = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
+            let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            renderizar(json);
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    });
+
+    function renderizar(data) {
+        let lista = document.getElementById('lista');
+        lista.innerHTML = "";
+        let ops = [...new Set(data.map(r => r.op))];
+        
+        ops.forEach(op => {
+            lista.innerHTML += `<h1>OP: ${op}</h1>`;
+            let muebles = data.filter(r => r.op == op);
+            let codigos = [...new Set(muebles.map(r => r.cod_mueble))];
             
-            // Agrupamos
-            let ops = [...new Set(data.map(r => r.op))];
-            ops.forEach(op => {
-                lista.innerHTML += `<h1>OP: ${op}</h1>`;
-                let muebles = data.filter(r => r.op == op);
-                let codigos = [...new Set(muebles.map(r => r.cod_mueble))];
+            codigos.forEach(cod => {
+                let items = muebles.filter(r => r.cod_mueble == cod);
+                let es_esp = items[0].especial;
+                let fila = (items[0].__rowNum__ || 0) + 2; 
+                let div = document.createElement('div');
+                div.className = 'mueble-container' + (es_esp ? ' esp' : '');
+                div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
+                div.dataset.text = JSON.stringify(items).toUpperCase();
                 
-                codigos.forEach(cod => {
-                    let items = muebles.filter(r => r.cod_mueble == cod);
-                    let es_esp = items[0].especial; 
-                    let filaExcel = items[0].__rowNum__ + 1; // Fila real en Excel
-                    let ubicacion = colLetras[2] + (filaExcel + 1); // Asumiendo columna 3 para cod_mueble
-                    
-                    let div = document.createElement('div');
-                    div.className = 'mueble-container' + (es_esp ? ' esp' : '');
-                    div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
-                    div.dataset.text = JSON.stringify(items).toUpperCase();
-                    
-                    div.innerHTML = `<h2>${cod} (${ubicacion})</h2>
-                        <table>
-                            <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
-                            ${items.map(row => `<tr>
-                                <td class='ptipo'>${row['Tipo ']||''}</td><td>${row.job||''}</td>
-                                <td class='pcod'>${row.cod_pieza||''}</td><td>${row.cant_piezas||''}</td>
-                                <td class='med1'>${row.medida1||0}</td><td>${row.medida2||''}</td>
-                                <td>${row.l1||''}</td><td>${row.l2||''}</td><td>${row.c1||''}</td><td>${row.c2||''}</td>
-                            </tr>`).join('')}
-                        </table>`;
-                    lista.appendChild(div);
-                });
+                div.innerHTML = `<h2>${cod} (C${fila})</h2>
+                    <table>
+                        <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
+                        ${items.map(row => `<tr>
+                            <td>${row['Tipo ']||''}</td><td>${row.job||''}</td>
+                            <td class='pcod'>${row.cod_pieza||''}</td><td>${row.cant_piezas||''}</td>
+                            <td class='med1'>${row.medida1||0}</td><td>${row.medida2||''}</td>
+                            <td>${row.l1||''}</td><td>${row.l2||''}</td><td>${row.c1||''}</td><td>${row.c2||''}</td>
+                        </tr>`).join('')}
+                    </table>`;
+                lista.appendChild(div);
             });
-        }
+        });
+    }
 
-        function filtrar() {
-            let inputs = document.querySelectorAll('.f-input');
-            document.querySelectorAll('.mueble-container').forEach(div => {
-                let t = div.dataset.text;
-                div.style.display = Array.from(inputs).every(i => t.includes(i.value.toUpperCase())) ? "" : "none";
-            });
-        }
+    function filtrar() {
+        let val = document.querySelector('.f-input').value.toUpperCase();
+        document.querySelectorAll('.mueble-container').forEach(div => {
+            div.style.display = div.dataset.text.includes(val) ? "" : "none";
+        });
+    }
 
-        function validarTodo() {
-            document.querySelectorAll('.mueble-container').forEach(div => {
-                let ancho = parseInt(div.dataset.ancho);
-                let error = false;
-                div.querySelectorAll('tr').forEach(tr => {
-                    let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
-                    let m1 = parseInt(tr.querySelector('.med1')?.innerText) || 0;
-                    if((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37)) error = true;
-                });
-                div.classList.add(error ? 'err' : 'ok');
+    function validarTodo() {
+        document.querySelectorAll('.mueble-container').forEach(div => {
+            let ancho = parseInt(div.dataset.ancho);
+            let error = false;
+            div.querySelectorAll('tr').forEach(tr => {
+                let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
+                let m1 = parseInt(tr.querySelector('.med1')?.innerText) || 0;
+                if((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37)) error = true;
             });
-        }
-    </script>
+            div.classList.remove('err', 'ok');
+            div.classList.add(error ? 'err' : 'ok');
+        });
+    }
+</script>
 </body>
 </html>
