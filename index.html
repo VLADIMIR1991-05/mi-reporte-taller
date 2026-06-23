@@ -7,26 +7,24 @@
     <style>
         body { font-family: Arial; padding: 20px; background: #f4f4f9; }
         .panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .f-input { padding: 10px; border: 2px solid #2c3e50; border-radius: 4px; width: 100%; }
-        .mueble-container { background: white; margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        .f-input { padding: 10px; border: 2px solid #2c3e50; border-radius: 4px; }
+        .mueble-container { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; }
         table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; font-size: 12px; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; font-size: 13px; }
         .err { background-color: #ffb3b3 !important; }
         .ok { background-color: #b3ffb3 !important; }
     </style>
 </head>
 <body>
     <h1>Reporte de Producción</h1>
-    <input type="file" id="upload" accept=".xlsx, .csv" style="margin-bottom:20px;">
-    
-    <div class="panel">
+    <input type="file" id="upload" accept=".xlsx, .csv">
+    <div class="panel" style="margin-top:20px;">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 1...">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 2...">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 3...">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 4...">
     </div>
-    <button onclick="validarTodo()" style="padding:15px; cursor:pointer; background:#2c3e50; color:white; border:none; border-radius:5px;">VALIDAR MEDIDAS</button>
-    
+    <button onclick="validarTodo()" style="padding:10px; cursor:pointer;">VALIDAR MEDIDAS</button>
     <div id="lista"></div>
 
     <script>
@@ -43,25 +41,24 @@
 
         function renderizar(data) {
             let html = "";
-            let grupos = {};
             data.forEach(row => {
-                if(!grupos[row.op]) grupos[row.op] = [];
-                grupos[row.op].push(row);
+                // Lógica: extrae ancho de cod_mueble (A27 -> 270)
+                let match = row.cod_mueble.match(/[A-Z](\d+)/);
+                let ancho = match ? parseInt(match[1]) * 10 : 0;
+                
+                html += `<div class='mueble-container' data-text='${JSON.stringify(row).toUpperCase()}' data-ancho='${ancho}'>
+                    <h2>${row.cod_mueble}</h2>
+                    <table>
+                        <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
+                        <tr>
+                            <td class='pcod'>${row['Tipo ']}</td><td>${row.job}</td>
+                            <td class='pname'>${row.cod_pieza}</td><td>${row.cant_piezas}</td>
+                            <td class='med1'>${row.medida1}</td><td>${row.medida2}</td>
+                            <td>${row.l1}</td><td>${row.l2}</td><td>${row.c1}</td><td>${row.c2}</td>
+                        </tr>
+                    </table>
+                </div>`;
             });
-
-            for(let op in grupos) {
-                html += `<h1>OP: ${op}</h1>`;
-                grupos[op].forEach(row => {
-                    let ancho = (row.cod_mueble.match(/[A-Z](\d+)/)) ? parseInt(row.cod_mueble.match(/[A-Z](\d+)/)[1]) * 10 : 0;
-                    html += `<div class='mueble-container' data-text='${JSON.stringify(row).toUpperCase()}' data-ancho='${ancho}'>
-                        <h2>${row.cod_mueble}</h2>
-                        <table>
-                            <tr>${Object.keys(row).map(k => `<th>${k}</th>`).join('')}</tr>
-                            <tr>${Object.values(row).map(v => `<td class='celda'>${v}</td>`).join('')}</tr>
-                        </table>
-                    </div>`;
-                });
-            }
             document.getElementById('lista').innerHTML = html;
         }
 
@@ -76,10 +73,9 @@
         function validarTodo() {
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let ancho = parseInt(div.getAttribute('data-ancho'));
-                let texto = div.innerText.toUpperCase();
-                let esBaseTecho = (texto.includes('BASE') || texto.includes('TECHO'));
-                let m1 = parseInt(div.querySelector('.celda:nth-child(5)')?.innerText) || 0; // Ajusta el índice según tu columna M1
-                let error = (esBaseTecho && m1 !== (ancho - 37));
+                let p = div.querySelector('.pname').innerText.toUpperCase();
+                let m1 = parseInt(div.querySelector('.med1').innerText) || 0;
+                let error = ((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37));
                 div.className = 'mueble-container ' + (error ? 'err' : 'ok');
             });
         }
