@@ -1,40 +1,88 @@
-# Este código genera un archivo HTML que tiene todo el motor de validación y filtros dentro.
-# Una vez generado, solo necesitas subir este archivo a un servidor.
-html_final = """
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <title>Reporte de Producción</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial; padding: 15px; background-color: #f4f4f9; }
-        .panel { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 10px; }
-        input { padding: 10px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
-        .mueble { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #3498db; }
-        .err { background-color: #ffcccc; border-left: 5px solid #e74c3c; }
-        .ok { background-color: #d4edda; border-left: 5px solid #28a745; }
-        button { padding: 12px; width: 100%; margin-top: 10px; cursor: pointer; border: none; color: white; border-radius: 5px; }
+        body { font-family: Arial; padding: 20px; background: #f4f4f9; }
+        .panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .f-input { padding: 10px; border: 2px solid #2c3e50; border-radius: 4px; width: 100%; }
+        .mueble-container { background: white; margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; font-size: 12px; }
+        .err { background-color: #ffb3b3 !important; }
+        .ok { background-color: #b3ffb3 !important; }
     </style>
 </head>
 <body>
-    <input type="file" id="fileInput" accept=".csv, .xlsx" onchange="cargarArchivo(event)">
-    <div id="app" style="display:none;">
-        <div class="panel">
-            <input type="text" id="f1" onkeyup="filtrar()" placeholder="Filtro 1...">
-            <input type="text" id="f2" onkeyup="filtrar()" placeholder="Filtro 2...">
-        </div>
-        <button onclick="validarTodo()" style="background:#2c3e50;">VALIDAR MEDIDAS</button>
-        <button onclick="generarPDF()" style="background:#e74c3c;">DESCARGAR PDF</button>
-        <div id="lista"></div>
+    <h1>Reporte de Producción</h1>
+    <input type="file" id="upload" accept=".xlsx, .csv" style="margin-bottom:20px;">
+    
+    <div class="panel">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 1...">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 2...">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 3...">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 4...">
     </div>
+    <button onclick="validarTodo()" style="padding:15px; cursor:pointer; background:#2c3e50; color:white; border:none; border-radius:5px;">VALIDAR MEDIDAS</button>
+    
+    <div id="lista"></div>
+
     <script>
-        function cargarArchivo(event) {
-            // Aquí iría la lógica para procesar el CSV/Excel directamente en el navegador sin Colab.
-            // Para simplificar, esta versión espera que subas un CSV.
-            document.getElementById('app').style.display = 'block';
-            alert("Archivo cargado. Ya puedes filtrar y validar.");
+        document.getElementById('upload').addEventListener('change', function(e) {
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                let data = new Uint8Array(event.target.result);
+                let wb = XLSX.read(data, {type: 'array'});
+                let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                renderizar(json);
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function renderizar(data) {
+            let html = "";
+            let grupos = {};
+            data.forEach(row => {
+                if(!grupos[row.op]) grupos[row.op] = [];
+                grupos[row.op].push(row);
+            });
+
+            for(let op in grupos) {
+                html += `<h1>OP: ${op}</h1>`;
+                grupos[op].forEach(row => {
+                    let ancho = (row.cod_mueble.match(/[A-Z](\d+)/)) ? parseInt(row.cod_mueble.match(/[A-Z](\d+)/)[1]) * 10 : 0;
+                    html += `<div class='mueble-container' data-text='${JSON.stringify(row).toUpperCase()}' data-ancho='${ancho}'>
+                        <h2>${row.cod_mueble}</h2>
+                        <table>
+                            <tr>${Object.keys(row).map(k => `<th>${k}</th>`).join('')}</tr>
+                            <tr>${Object.values(row).map(v => `<td class='celda'>${v}</td>`).join('')}</tr>
+                        </table>
+                    </div>`;
+                });
+            }
+            document.getElementById('lista').innerHTML = html;
+        }
+
+        function filtrar() {
+            let inputs = document.querySelectorAll('.f-input');
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                let t = div.getAttribute('data-text');
+                div.style.display = Array.from(inputs).every(i => t.includes(i.value.toUpperCase())) ? "" : "none";
+            });
+        }
+
+        function validarTodo() {
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                let ancho = parseInt(div.getAttribute('data-ancho'));
+                let texto = div.innerText.toUpperCase();
+                let esBaseTecho = (texto.includes('BASE') || texto.includes('TECHO'));
+                let m1 = parseInt(div.querySelector('.celda:nth-child(5)')?.innerText) || 0; // Ajusta el índice según tu columna M1
+                let error = (esBaseTecho && m1 !== (ancho - 37));
+                div.className = 'mueble-container ' + (error ? 'err' : 'ok');
+            });
         }
     </script>
 </body>
 </html>
-"""
-with open('index.html', 'w') as f: f.write(html_final)
