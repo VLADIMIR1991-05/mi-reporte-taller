@@ -69,7 +69,7 @@
                     div.className = 'mueble-container' + (es_esp ? ' esp' : '');
                     div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
                     
-                    // SOLUCIÓN AL FILTRO: Extraer estrictamente los valores de la tabla (sin nombres de columnas ocultos)
+                    // Extraer estrictamente los valores de la tabla
                     let valoresPuros = items.map(row => Object.values(row).join(' ')).join(' ');
                     div.dataset.text = (op + " " + cod + " " + valoresPuros).toUpperCase();
                     
@@ -94,64 +94,52 @@
 
         function filtrar() {
             let inputs = document.querySelectorAll('.f-input');
-            // Capturamos solo los filtros que tienen algo escrito, ignorando los vacíos
             let valores = Array.from(inputs)
                                .map(i => i.value.trim().toUpperCase())
                                .filter(v => v !== "");
             
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let textoTarjeta = div.dataset.text;
-                
-                // Si no hay valores en los filtros (todo borrado), 'every' devuelve true y muestra todo
                 let visible = valores.every(v => textoTarjeta.includes(v));
                 div.style.display = visible ? "" : "none";
             });
         }
 
         function validarTodo() {
-    document.querySelectorAll('.mueble-container').forEach(div => {
-        let error = false;
-        
-        // =========================================================
-        // VALIDACIÓN 1: Regla de Ancho - 37 (Tu código original)
-        // Evalúa que la medida 1 (M1) de BASE y TECHO sea correcta
-        // =========================================================
-        let ancho = parseInt(div.dataset.ancho);
-        div.querySelectorAll('tr').forEach(tr => {
-            let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
-            let m1 = parseInt(tr.querySelector('.med1')?.innerText) || 0;
-            if((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37)) {
-                error = true;
-            }
-        });
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                let error = false;
+                
+                // VALIDACIÓN 1: Regla de Ancho - 37
+                let ancho = parseInt(div.dataset.ancho);
+                div.querySelectorAll('tr').forEach(tr => {
+                    let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
+                    let m1 = parseInt(tr.querySelector('.med1')?.innerText) || 0;
+                    if((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37)) {
+                        error = true;
+                    }
+                });
 
-        // =========================================================
-        // VALIDACIÓN 2: Profundidad (M2) igual (NUEVO CÓDIGO)
-        // Evalúa que AJ_, BAS, TEC y L__ tengan la misma medida 2
-        // =========================================================
-        let profundidades = new Set(); // Set guarda valores únicos
-        div.querySelectorAll('tr').forEach(tr => {
-            let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
-            // Capturamos M2 que está en la columna 6 de la tabla (índice 5 en JavaScript)
-            let m2 = parseInt(tr.children[5]?.innerText) || 0; 
-            
-            // Si el código de pieza contiene AJ_, BAS, TEC o empieza con L (Lateral)
-            if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
-                if (m2 > 0) {
-                    profundidades.add(m2); // Guardamos la profundidad
+                // VALIDACIÓN 2: Profundidad (M2) igual
+                let profundidades = new Set();
+                div.querySelectorAll('tr').forEach(tr => {
+                    let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
+                    let m2 = parseInt(tr.children[5]?.innerText) || 0; 
+                    
+                    if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
+                        if (m2 > 0) {
+                            profundidades.add(m2);
+                        }
+                    }
+                });
+
+                if (profundidades.size > 1) {
+                    error = true;
                 }
-            }
-        });
 
-        // Si guardó más de 1 medida diferente entre estas piezas, significa que no coinciden
-        if (profundidades.size > 1) {
-            error = true;
+                div.classList.remove('err', 'ok');
+                div.classList.add(error ? 'err' : 'ok');
+            });
         }
-
-        // =========================================================
-        // RESULTADO: Pinta la tarjeta si alguna validación falló
-        // =========================================================
-        div.classList.remove('err', 'ok');
-        div.classList.add(error ? 'err' : 'ok');
-    });
-}
+    </script>
+</body>
+</html>
