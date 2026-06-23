@@ -68,7 +68,10 @@
                     let div = document.createElement('div');
                     div.className = 'mueble-container' + (es_esp ? ' esp' : '');
                     div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
-                    div.dataset.text = JSON.stringify(items).toUpperCase();
+                    
+                    // SOLUCIÓN AL FILTRO: Extraer estrictamente los valores de la tabla (sin nombres de columnas ocultos)
+                    let valoresPuros = items.map(row => Object.values(row).join(' ')).join(' ');
+                    div.dataset.text = (op + " " + cod + " " + valoresPuros).toUpperCase();
                     
                     div.innerHTML = `
                         <div style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
@@ -91,10 +94,15 @@
 
         function filtrar() {
             let inputs = document.querySelectorAll('.f-input');
-            let valores = Array.from(inputs).map(i => i.value.toUpperCase());
+            // Capturamos solo los filtros que tienen algo escrito, ignorando los vacíos
+            let valores = Array.from(inputs)
+                               .map(i => i.value.trim().toUpperCase())
+                               .filter(v => v !== "");
             
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let textoTarjeta = div.dataset.text;
+                
+                // Si no hay valores en los filtros (todo borrado), 'every' devuelve true y muestra todo
                 let visible = valores.every(v => textoTarjeta.includes(v));
                 div.style.display = visible ? "" : "none";
             });
