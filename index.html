@@ -17,7 +17,7 @@
 
         .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
         .mueble-container.esp { border-left-color: #e67e22; background: #fffdf9; }
-        .mueble-container h2 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.2em; }
+        .mueble-container h2 { margin-top: 0; color: var(--primary); font-size: 1.2em; display: inline-block; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8f9fa; color: #666; font-size: 11px; padding: 10px; text-transform: uppercase; }
@@ -25,6 +25,7 @@
         
         .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
         .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
+        .op-tag { color: #7f8c8d; font-weight: bold; background: #ecf0f1; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; float: right; }
     </style>
 </head>
 <body>
@@ -71,7 +72,11 @@
                 div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
                 div.dataset.text = JSON.stringify(items).toUpperCase();
                 
-                div.innerHTML = `<h2>${cod} (C${fila})</h2>
+                div.innerHTML = `
+                    <div style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                        <span class="op-tag">OP: ${op}</span>
+                        <h2>${cod} (C${fila})</h2>
+                    </div>
                     <table>
                         <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
                         ${items.map(row => `<tr>
