@@ -4,25 +4,22 @@
     <meta charset="UTF-8">
     <title>Validador de Despiece</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
+        /* SECCIÓN 1: DISEÑO Y ESTILOS (CSS) */
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
-        
         .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
         .f-input { padding: 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px; }
-        
         button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button:hover { background: #2980b9; }
-
         .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
         .mueble-container.esp { border-left-color: #e67e22; background: #fffdf9; }
         .mueble-container h2 { margin-top: 0; color: var(--primary); font-size: 1.2em; display: inline-block; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8f9fa; color: #666; font-size: 11px; padding: 10px; text-transform: uppercase; }
         td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px; }
-        
         .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
         .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
         .op-tag { color: #7f8c8d; font-weight: bold; background: #ecf0f1; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; float: right; }
@@ -43,6 +40,8 @@
 <div id="lista"></div>
 
 <script>
+    /* SECCIÓN 2: CARGA DE ARCHIVO */
+    // Captura el archivo, lo lee y pasa los datos a la función de renderizado
     document.getElementById('upload').addEventListener('change', function(e) {
         let reader = new FileReader();
         reader.onload = function(event) {
@@ -53,6 +52,8 @@
         reader.readAsArrayBuffer(e.target.files[0]);
     });
 
+    /* SECCIÓN 3: PROCESAMIENTO Y RENDERIZADO */
+    // Agrupa los datos por OP y Mueble, y dibuja las tarjetas en pantalla
     function renderizar(data) {
         let lista = document.getElementById('lista');
         lista.innerHTML = "";
@@ -91,6 +92,8 @@
         });
     }
 
+    /* SECCIÓN 4: FILTRADO DINÁMICO */
+    // Oculta o muestra tarjetas basándose en el texto que escribas en el buscador
     function filtrar() {
         let val = document.querySelector('.f-input').value.toUpperCase();
         document.querySelectorAll('.mueble-container').forEach(div => {
@@ -98,6 +101,8 @@
         });
     }
 
+    /* SECCIÓN 5: LÓGICA DE VALIDACIÓN */
+    // Recorre todas las piezas y verifica si BASE/TECHO cumplen la regla (Ancho - 37)
     function validarTodo() {
         document.querySelectorAll('.mueble-container').forEach(div => {
             let ancho = parseInt(div.dataset.ancho);
