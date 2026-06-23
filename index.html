@@ -109,18 +109,49 @@
         }
 
         function validarTodo() {
-            document.querySelectorAll('.mueble-container').forEach(div => {
-                let ancho = parseInt(div.dataset.ancho);
-                let error = false;
-                div.querySelectorAll('tr').forEach(tr => {
-                    let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
-                    let m1 = parseInt(tr.querySelector('.med1')?.innerText) || 0;
-                    if((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37)) error = true;
-                });
-                div.classList.remove('err', 'ok');
-                div.classList.add(error ? 'err' : 'ok');
-            });
+    document.querySelectorAll('.mueble-container').forEach(div => {
+        let error = false;
+        
+        // =========================================================
+        // VALIDACIÓN 1: Regla de Ancho - 37 (Tu código original)
+        // Evalúa que la medida 1 (M1) de BASE y TECHO sea correcta
+        // =========================================================
+        let ancho = parseInt(div.dataset.ancho);
+        div.querySelectorAll('tr').forEach(tr => {
+            let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
+            let m1 = parseInt(tr.querySelector('.med1')?.innerText) || 0;
+            if((p.includes('BASE') || p.includes('TECHO')) && m1 !== (ancho - 37)) {
+                error = true;
+            }
+        });
+
+        // =========================================================
+        // VALIDACIÓN 2: Profundidad (M2) igual (NUEVO CÓDIGO)
+        // Evalúa que AJ_, BAS, TEC y L__ tengan la misma medida 2
+        // =========================================================
+        let profundidades = new Set(); // Set guarda valores únicos
+        div.querySelectorAll('tr').forEach(tr => {
+            let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
+            // Capturamos M2 que está en la columna 6 de la tabla (índice 5 en JavaScript)
+            let m2 = parseInt(tr.children[5]?.innerText) || 0; 
+            
+            // Si el código de pieza contiene AJ_, BAS, TEC o empieza con L (Lateral)
+            if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
+                if (m2 > 0) {
+                    profundidades.add(m2); // Guardamos la profundidad
+                }
+            }
+        });
+
+        // Si guardó más de 1 medida diferente entre estas piezas, significa que no coinciden
+        if (profundidades.size > 1) {
+            error = true;
         }
-    </script>
-</body>
-</html>
+
+        // =========================================================
+        // RESULTADO: Pinta la tarjeta si alguna validación falló
+        // =========================================================
+        div.classList.remove('err', 'ok');
+        div.classList.add(error ? 'err' : 'ok');
+    });
+}
