@@ -12,11 +12,11 @@
         .f-input { padding: 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px; }
         button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .mueble-container { background: white; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; border-radius: 8px; }
-        .mueble-container.err { border-left-color: #e74c3c; background: #fff5f5; }
-        .mueble-container.ok { border-left-color: #27ae60; background: #f0fff4; }
+        .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
+        .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8f9fa; padding: 10px; font-size: 11px; text-transform: uppercase; }
-        td { padding: 8px; border-bottom: 1px solid #eee; text-align: center; }
+        td { padding: 8px; border-bottom: 1px solid #eee; text-align: center; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -27,7 +27,7 @@
     </div>
 
     <div class="controls">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro de búsqueda...">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro...">
         <button onclick="validarTodo()">VALIDAR ESTRUCTURA</button>
     </div>
 
@@ -53,10 +53,16 @@
                 let items = data.filter(r => r.cod_mueble == cod);
                 let div = document.createElement('div');
                 div.className = 'mueble-container';
+                div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
+                
                 div.innerHTML = `<h2>${cod}</h2>
                     <table>
-                        <tr><th>Pieza</th><th>M1</th><th>M2</th></tr>
-                        ${items.map(r => `<tr><td>${r.cod_pieza||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td></tr>`).join('')}
+                        <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
+                        ${items.map(r => `<tr>
+                            <td>${r['Tipo ']}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
+                            <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
+                            <td>${r.l1||''}</td><td>${r.l2||''}</td><td>${r.c1||''}</td><td>${r.c2||''}</td>
+                        </tr>`).join('')}
                     </table>`;
                 lista.appendChild(div);
             });
@@ -66,37 +72,32 @@
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let error = false;
                 let codMueble = div.querySelector('h2').innerText;
-                let tipo = codMueble[0]; // A, B, S, X, E
+                let tipo = codMueble[0];
+                let anchoTotal = parseInt(div.dataset.ancho);
                 
-                // Calcular Ancho Total
-                let match = codMueble.match(/[A-Z](\d+)/);
-                let anchoTotal = match ? parseInt(match[1]) * 10 : 0;
-                
-                // Definir Profundidad Esperada (Estructura - 20mm puerta)
-                let prof = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
+                // Profundidad según tipo (Incluyendo descuento de 20mm de puerta/fuga)
+                let profEsperada = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
 
                 div.querySelectorAll('tr').forEach(tr => {
-                    let textoFila = tr.innerText;
-                    let p = tr.cells[0]?.innerText.toUpperCase() || "";
-                    let m1 = parseInt(tr.cells[1]?.innerText) || 0;
-                    let m2 = parseInt(tr.cells[2]?.innerText) || 0;
+                    let p = tr.cells[2]?.innerText.toUpperCase() || ""; // Columna Pieza
+                    let m1 = parseInt(tr.cells[4]?.innerText) || 0;    // Columna M1
+                    let m2 = parseInt(tr.cells[5]?.innerText) || 0;    // Columna M2
+                    let job = tr.cells[1]?.innerText || "";            // Columna Job (Espesor)
 
-                    // Lógica dinámica de espesor: Si la fila menciona "15", descuento 31mm, si no, 37mm
-                    let es15 = textoFila.includes('15');
-                    let descuento = es15 ? 31 : 37;
+                    // 1. Detección de espesor dinámico
+                    let descuento = job.includes('15') ? 31 : 37;
 
-                    // 1. Validar Bases, Techos, Ajustes (Ancho - Descuento)
+                    // 2. Validar Bases/Techos/Ajustes (Ancho - Descuento)
                     if (p.includes('BASE') || p.includes('TECHO') || p.includes('AJ_')) {
                         let target = anchoTotal - descuento;
                         if (m1 !== target && m2 !== target) error = true;
                     }
 
-                    // 2. Validar Profundidad (Laterales, Bases, Techos, Ajustes)
+                    // 3. Validar Profundidad (Laterales, Bases, Techos, Ajustes)
                     if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
-                        if (m1 !== prof && m2 !== prof) error = true;
+                        if (m1 !== profEsperada && m2 !== profEsperada) error = true;
                     }
                 });
-
                 div.className = 'mueble-container ' + (error ? 'err' : 'ok');
             });
         }
