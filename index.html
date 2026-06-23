@@ -21,6 +21,29 @@
     <input type="file" id="upload" accept=".xlsx, .csv">
     <div class="panel" style="margin-top:20px;">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 1...">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 2..."><!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Producción</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; background-color: #f4f4f9; }
+        .panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .f-input { padding: 10px; border: 2px solid #2c3e50; border-radius: 4px; width: 90%; }
+        .mueble-container { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: white; }
+        .esp { border-left: 5px solid #e67e22; background-color: #fff3cd; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: center; font-size: 13px; }
+        .err { background-color: #ffb3b3 !important; }
+        .ok { background-color: #b3ffb3 !important; }
+    </style>
+</head>
+<body>
+    <h1>Reporte de Producción</h1>
+    <input type="file" id="upload" accept=".xlsx, .csv">
+    <div class="panel" style="margin-top:20px;">
+        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 1...">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 2...">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 3...">
         <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro 4...">
@@ -34,18 +57,18 @@
             reader.onload = function(event) {
                 let wb = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
                 let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                agruparYRenderizar(json);
+                renderizar(json);
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        function agruparYRenderizar(data) {
+        function renderizar(data) {
             let lista = document.getElementById('lista');
             lista.innerHTML = "";
+            let colLetras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             
-            // Agrupar por OP
+            // Agrupamos
             let ops = [...new Set(data.map(r => r.op))];
-            
             ops.forEach(op => {
                 lista.innerHTML += `<h1>OP: ${op}</h1>`;
                 let muebles = data.filter(r => r.op == op);
@@ -53,20 +76,20 @@
                 
                 codigos.forEach(cod => {
                     let items = muebles.filter(r => r.cod_mueble == cod);
-                    let es_esp = items[0].especial; // Ajustar si el campo se llama distinto
-                    let match = cod.match(/[A-Z](\d+)/);
-                    let ancho = match ? parseInt(match[1]) * 10 : 0;
+                    let es_esp = items[0].especial; 
+                    let filaExcel = items[0].__rowNum__ + 1; // Fila real en Excel
+                    let ubicacion = colLetras[2] + (filaExcel + 1); // Asumiendo columna 3 para cod_mueble
                     
                     let div = document.createElement('div');
                     div.className = 'mueble-container' + (es_esp ? ' esp' : '');
-                    div.dataset.ancho = ancho;
+                    div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
                     div.dataset.text = JSON.stringify(items).toUpperCase();
                     
-                    div.innerHTML = `<h2>${cod}</h2>
+                    div.innerHTML = `<h2>${cod} (${ubicacion})</h2>
                         <table>
                             <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
                             ${items.map(row => `<tr>
-                                <td>${row['Tipo ']||''}</td><td>${row.job||''}</td>
+                                <td class='ptipo'>${row['Tipo ']||''}</td><td>${row.job||''}</td>
                                 <td class='pcod'>${row.cod_pieza||''}</td><td>${row.cant_piezas||''}</td>
                                 <td class='med1'>${row.medida1||0}</td><td>${row.medida2||''}</td>
                                 <td>${row.l1||''}</td><td>${row.l2||''}</td><td>${row.c1||''}</td><td>${row.c2||''}</td>
@@ -77,10 +100,17 @@
             });
         }
 
-        function filtrar() { /* ... lógica de filtrado anterior ... */ }
+        function filtrar() {
+            let inputs = document.querySelectorAll('.f-input');
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                let t = div.dataset.text;
+                div.style.display = Array.from(inputs).every(i => t.includes(i.value.toUpperCase())) ? "" : "none";
+            });
+        }
+
         function validarTodo() {
             document.querySelectorAll('.mueble-container').forEach(div => {
-                let ancho = parseInt(div.getAttribute('data-ancho'));
+                let ancho = parseInt(div.dataset.ancho);
                 let error = false;
                 div.querySelectorAll('tr').forEach(tr => {
                     let p = tr.querySelector('.pcod')?.innerText.toUpperCase() || "";
