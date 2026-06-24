@@ -2,18 +2,20 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Validador de Despiece Universal</title>
+    <title>Validador de Despiece - Madeval</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
         .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .controls { background: white; padding: 20px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
         .f-input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 120px; }
         button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h1.op-title { color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
         .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
         .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
+        .op-tag { font-size: 11px; color: #fff; background: #95a5a6; padding: 2px 6px; border-radius: 4px; float: right; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8f9fa; padding: 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #eee; }
         td { padding: 8px; border: 1px solid #eee; text-align: center; font-size: 13px; }
@@ -22,7 +24,7 @@
 <body>
 
     <div class="header">
-        <h1>Validador de Despiece (Filtros Universales)</h1>
+        <h1>Validador de Despiece</h1>
         <input type="file" id="upload" accept=".xlsx, .csv">
     </div>
 
@@ -50,41 +52,44 @@
         function renderizar(data) {
             let lista = document.getElementById('lista');
             lista.innerHTML = "";
-            let codigos = [...new Set(data.map(r => r.cod_mueble))];
+            let ops = [...new Set(data.map(r => r.op))];
             
-            codigos.forEach(cod => {
-                let items = data.filter(r => r.cod_mueble == cod);
-                let div = document.createElement('div');
-                div.className = 'mueble-container';
-                div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
+            ops.forEach(op => {
+                lista.innerHTML += `<h1 class="op-title">OP: ${op}</h1>`;
+                let mueblesEnOP = data.filter(r => r.op == op);
+                let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
                 
-                // --- FILTRO UNIVERSAL: Convertimos toda la fila a un solo string ---
-                let textoBusqueda = items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod;
-                div.dataset.universal = textoBusqueda.toUpperCase();
-                
-                div.innerHTML = `<h2>${cod}</h2>
-                    <table>
-                        <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
-                        ${items.map(r => `<tr>
-                            <td>${r['Tipo ']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
-                            <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
-                            <td>${r.l1||''}</td><td>${r.l2||''}</td><td>${r.c1||''}</td><td>${r.c2||''}</td>
-                        </tr>`).join('')}
-                    </table>`;
-                lista.appendChild(div);
+                codigos.forEach(cod => {
+                    let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
+                    let div = document.createElement('div');
+                    div.className = 'mueble-container';
+                    div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
+                    
+                    let textoBusqueda = items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod + " OP" + op;
+                    div.dataset.universal = textoBusqueda.toUpperCase();
+                    
+                    div.innerHTML = `
+                        <span class="op-tag">OP: ${op}</span>
+                        <h2>${cod}</h2>
+                        <table>
+                            <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
+                            ${items.map(r => `<tr>
+                                <td>${r['Tipo ']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
+                                <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
+                                <td>${r.l1||''}</td><td>${r.l2||''}</td><td>${r.c1||''}</td><td>${r.c2||''}</td>
+                            </tr>`).join('')}
+                        </table>`;
+                    lista.appendChild(div);
+                });
             });
         }
 
         function filtrarUniversal() {
             let inputs = document.querySelectorAll('.f-input');
-            // Recogemos todos los filtros que no estén vacíos
             let filtros = Array.from(inputs).map(i => i.value.toUpperCase().trim()).filter(v => v !== "");
-            
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let textoContenedor = div.dataset.universal;
-                // Verificamos que el contenedor cumpla con TODOS los filtros activos (Lógica AND)
-                let esVisible = filtros.every(f => textoContenedor.includes(f));
-                div.style.display = esVisible ? "" : "none";
+                div.style.display = filtros.every(f => textoContenedor.includes(f)) ? "" : "none";
             });
         }
 
