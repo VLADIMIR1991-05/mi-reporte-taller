@@ -762,16 +762,16 @@
         };
 
         // Columnas que el sistema intenta leer del archivo.
-        const COLS_DESEADAS = ["op", "Tipo", "cod_mueble", "cod_pieza", "cant_piezas", "medida1", "medida2", "l1", "l2", "c1", "c2", "nomueble"];
+        const COLS_DESEADAS = ["op", "Tipo", "cod_pieza", "cant_piezas", "medida1", "medida2", "l1", "l2", "c1", "c2", "nomueble"];
 
         // Columnas que se consideran numericas para alinearlas y validarlas.
         const COLS_NUMERICAS = new Set(["cant_piezas", "medida1", "medida2", "l1", "l2", "c1", "c2"]);
 
         // Columnas minimas para que la validacion tenga sentido.
-        const COLS_REQUERIDAS = ["op", "cod_mueble", "cod_pieza", "medida1", "medida2"];
+        const COLS_REQUERIDAS = ["op", "cod_pieza", "medida1", "medida2"];
 
         // Margen permitido en milimetros al comparar medidas.
-        const TOLERANCIA_MM = 2;
+        const TOLERANCIA_MM = 0;
 
         // Descuento usado para ancho de base/techo: 18mm x 2 laterales + 1mm fuga.
         const DESCUENTO_ANCHO = 37;
