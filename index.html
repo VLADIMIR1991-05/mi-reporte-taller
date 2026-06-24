@@ -758,7 +758,15 @@
             "ACL-TV": "Accesorio Hafele Elevador TV",
             "ACR-PE-SG": "Accesorio Persiana Aluminio Sobre Meson",
             "ACR-PE-SM": "Accesorio Persiana Aluminio Sobre Modulo",
-            "ACK-ELEV": "Accesorio Elevador Kessebohmer"
+            "ACK-ELEV": "Accesorio Elevador Kessebohmer",
+            BF: "Bisagra Frenada",
+            BS: "Modulo Bajo Suspendido",
+            BAR: "Bar",
+            "S/P": "Sin Puerta",
+            T1: "Tipo 1",
+            LRE: "Luz LED Repisa",
+            CL: "Closet",
+            CLOSET: "Closet"
         };
 
         // Columnas que el sistema intenta leer del archivo.
@@ -767,11 +775,11 @@
         // Columnas que se muestran en la tabla; op, cod_mueble y Tipo se usan fuera de la tabla.
         const COLS_TABLA = COLS_DESEADAS.filter(col => col !== "op" && col !== "cod_mueble" && col !== "Tipo");
 
-        // Posicion de la columna AJ en Excel, usando indice base cero.
-        const INDICE_COLUMNA_AJ = 35;
+        // Posicion de la columna AI en Excel, usando indice base cero.
+        const INDICE_COLUMNA_AI = 34;
 
-        // Clave interna donde se guarda siempre el contenido real de la columna AJ.
-        const CLAVE_COLUMNA_AJ = "__jov_columna_AJ";
+        // Clave interna donde se guarda siempre el contenido real de la columna AI.
+        const CLAVE_COLUMNA_AI = "__jov_columna_AI";
 
         // Columnas que se consideran numericas para alinearlas y validarlas.
         const COLS_NUMERICAS = new Set(["cant_piezas", "medida1", "medida2", "l1", "l2", "c1", "c2"]);
@@ -903,7 +911,7 @@
             // Toma la primera fila como encabezados.
             const headers = rows[0].map((header, index) => String(header || `__col_${index}`).trim());
 
-            // Convierte las demas filas a objetos y agrega la columna AJ como JOV interno.
+            // Convierte las demas filas a objetos y agrega la columna AI como JOV interno.
             return rows.slice(1)
                 .filter(row => row.some(value => String(value).trim() !== ""))
                 .map(row => {
@@ -913,7 +921,7 @@
                         obj[header] = row[index] ?? "";
                     });
 
-                    obj[CLAVE_COLUMNA_AJ] = row[INDICE_COLUMNA_AJ] ?? "";
+                    obj[CLAVE_COLUMNA_AI] = row[INDICE_COLUMNA_AI] ?? "";
 
                     return obj;
                 });
@@ -938,7 +946,7 @@
                     headers.forEach((header, index) => {
                         obj[header] = fila[index] ?? "";
                     });
-                    obj[CLAVE_COLUMNA_AJ] = fila[INDICE_COLUMNA_AJ] ?? "";
+                    obj[CLAVE_COLUMNA_AI] = fila[INDICE_COLUMNA_AI] ?? "";
                     return obj;
                 });
         }
@@ -1014,9 +1022,9 @@
                 MAPA_COLUMNAS[col] = exacta || flexible || null;
             });
 
-            // Para JOV usa siempre el contenido fisico de la columna AJ del archivo cargado.
-            if (headers.includes(CLAVE_COLUMNA_AJ)) {
-                MAPA_COLUMNAS.jov = CLAVE_COLUMNA_AJ;
+            // Para JOV usa siempre el contenido fisico de la columna AI del archivo cargado.
+            if (headers.includes(CLAVE_COLUMNA_AI)) {
+                MAPA_COLUMNAS.jov = CLAVE_COLUMNA_AI;
             }
         }
 
@@ -1037,14 +1045,14 @@
             // Toma el valor real desde la fila.
             const value = row[key];
 
-            // Para JOV muestra solo el numero encontrado en la columna AJ.
+            // Para JOV muestra solo el numero encontrado en la columna AI.
             if (col === "jov") return extraerNumeroJov(value);
 
             // Convierte null o undefined a texto vacio.
             return value !== undefined && value !== null ? String(value).trim() : "";
         }
 
-        // Extrae solo el numero del material JOV ubicado en la columna AJ.
+        // Extrae solo el numero del material JOV ubicado en la columna AI.
         function extraerNumeroJov(value) {
             // Convierte el valor a texto limpio.
             const texto = value !== undefined && value !== null ? String(value).trim() : "";
@@ -1067,8 +1075,236 @@
             // Si existe completo en el diccionario, lo devuelve.
             if (DB[codigo]) return DB[codigo];
 
-            // Divide por guiones para intentar traducir cada parte.
-            return codigo.split("-").map(parte => DB[parte] || parte).join(" + ");
+            // Intenta interpretar codigos compactos de modulo como B60IH36 o A40DH5-TI-LBA-BF.
+            const interpretado = interpretarCodigoModulo(codigo);
+
+            // Si logro interpretar partes, las devuelve como descripcion completa.
+            if (interpretado.length > 0) return interpretado.join(" + ");
+
+            // Divide por guiones para intentar traducir cada parte como respaldo.
+            return codigo.split("-").map(parte => traducirToken(parte)).join(" + ");
+        }
+
+        // Interpreta el codigo tecnico principal y sus accesorios.
+        function interpretarCodigoModulo(codigo) {
+            // Separa el codigo principal de los accesorios con guion.
+            const partes = String(codigo || "").split("-").filter(Boolean);
+
+            // Si no hay partes, devuelve lista vacia.
+            if (partes.length === 0) return [];
+
+            // Toma la primera parte como codigo compacto del modulo.
+            const principal = partes[0];
+
+            // Toma el resto como accesorios o condiciones adicionales.
+            const accesorios = partes.slice(1);
+
+            // Detecta tipo completo como todas las letras antes del primer numero.
+            const match = principal.match(/^([A-Z]+)(\d{2,3})(.*)$/);
+
+            // Si no coincide con formato de modulo, intenta traducir accesorios normales.
+            if (!match) return partes.map(parte => traducirToken(parte));
+
+            // Extrae cada parte capturada.
+            const [, tipo, ancho, detalleCompacto] = match;
+
+            // Guarda la descripcion armada.
+            const descripcion = [];
+
+            // Agrega tipo de modulo.
+            descripcion.push(traducirTipoModulo(tipo));
+
+            // Agrega ancho si existe.
+            if (ancho) descripcion.push(`Ancho ${Number.parseInt(ancho, 10) * 10}mm`);
+
+            // Interpreta detalles compactos despues del ancho, respetando el orden original.
+            const detalles = interpretarDetalleCompacto(detalleCompacto, tipo);
+
+            // Agrega los detalles compactos encontrados.
+            descripcion.push(...detalles);
+
+            // Si no vino altura explicita, aplica altura por defecto.
+            if (!detalles.some(texto => texto.startsWith("Altura"))) {
+                const alturaFinal = alturaPorDefecto(tipo);
+                if (alturaFinal) descripcion.push(traducirAltura(alturaFinal));
+            }
+
+            // Traduce accesorios despues de guiones.
+            accesorios.forEach(accesorio => descripcion.push(traducirToken(accesorio)));
+
+            // Devuelve descripcion sin valores vacios.
+            return descripcion.filter(Boolean);
+        }
+
+        // Interpreta detalles pegados despues del ancho, como IH36 o H12P6.7S/P.
+        function interpretarDetalleCompacto(detalle, tipo) {
+            // Normaliza el detalle.
+            let resto = String(detalle || "").toUpperCase().trim();
+
+            // Guarda las partes interpretadas en el orden encontrado.
+            const partes = [];
+
+            // Recorre de izquierda a derecha hasta consumir el texto.
+            while (resto.length > 0) {
+                // Detecta altura H12, H36, H8.6, etc.
+                const altura = resto.match(/^H\d+(?:\.\d+)?/);
+                if (altura) {
+                    partes.push(traducirAltura(altura[0]));
+                    resto = resto.slice(altura[0].length);
+                    continue;
+                }
+
+                // Detecta profundidad P6.7, P58, P53, etc.
+                const profundidad = resto.match(/^P\d+(?:\.\d+)?/);
+                if (profundidad) {
+                    partes.push(traducirProfundidad(profundidad[0]));
+                    resto = resto.slice(profundidad[0].length);
+                    continue;
+                }
+
+                // Detecta sin puerta dentro del codigo compacto.
+                if (resto.startsWith("S/P")) {
+                    partes.push(traducirToken("S/P"));
+                    resto = resto.slice(3);
+                    continue;
+                }
+
+                // Detecta apertura izquierda o derecha.
+                if (resto.startsWith("I") || resto.startsWith("D")) {
+                    partes.push(traducirApertura(resto.charAt(0)));
+                    resto = resto.slice(1);
+                    continue;
+                }
+
+                // Detecta tokens conocidos que puedan venir pegados.
+                const token = buscarTokenConocido(resto);
+                if (token) {
+                    partes.push(traducirToken(token));
+                    resto = resto.slice(token.length);
+                    continue;
+                }
+
+                // Si nada coincide, conserva el caracter para no perder informacion.
+                partes.push(resto.charAt(0));
+                resto = resto.slice(1);
+            }
+
+            // Devuelve partes interpretadas.
+            return partes;
+        }
+
+        // Traduce el tipo inicial del modulo.
+        function traducirTipoModulo(tipo) {
+            // Diccionario especifico para tipos compactos.
+            const tipos = {
+                B: "Modulo Bajo",
+                A: "Modulo Alto",
+                S: "Modulo Suspendido",
+                BS: "Modulo Bajo Suspendido",
+                BAR: "Bar",
+                X: "Modulo Auxiliar",
+                E: "Modulo Esquinero",
+                EB: "Esquinero Bajo",
+                EA: "Esquinero Alto",
+                ES: "Esquinero Suspendido",
+                EX: "Esquinero Auxiliar",
+                CL: "Closet",
+                CLOSET: "Closet"
+            };
+
+            // Devuelve traduccion conocida o una descripcion generica del codigo.
+            return tipos[tipo] || DB[tipo] || `Modulo ${tipo}`;
+        }
+
+        // Traduce apertura I/D.
+        function traducirApertura(apertura) {
+            // I significa izquierda.
+            if (apertura === "I") return "Apertura Izquierda";
+
+            // D significa derecha.
+            if (apertura === "D") return "Apertura Derecha";
+
+            // Respaldo por si llega otro valor.
+            return apertura;
+        }
+
+        // Devuelve altura por defecto segun la familia del modulo.
+        function alturaPorDefecto(tipo) {
+            // Bajos, bajos suspendidos, altos y esquineros comunes usan H4 cuando no se especifica altura.
+            if (["B", "BS", "A", "EB", "EA", "E"].includes(tipo)) return "H4";
+
+            // Auxiliares y closets usan H11 por defecto.
+            if (["X", "CL", "CLOSET"].includes(tipo)) return "H11";
+
+            // Sin altura por defecto para otros tipos.
+            return "";
+        }
+
+        // Traduce codigos de profundidad como P6.7 en milimetros.
+        function traducirProfundidad(profundidad) {
+            // Normaliza el codigo.
+            const codigo = String(profundidad || "").toUpperCase();
+
+            // Extrae el numero despues de P.
+            const match = codigo.match(/^P(\d+(?:\.\d+)?)$/);
+
+            // Si no hay numero, devuelve el codigo original.
+            if (!match) return codigo;
+
+            // Convierte P6.7 en 670mm, P58 en 580mm, etc.
+            const numero = Number.parseFloat(match[1]);
+            const mm = numero < 20 ? numero * 100 : numero * 10;
+
+            // Devuelve descripcion clara.
+            return `Profundidad ${Math.round(mm)}mm`;
+        }
+
+        // Traduce codigos de altura como H4, H5 o H36.
+        function traducirAltura(altura) {
+            // Normaliza la altura.
+            const codigoAltura = String(altura || "").toUpperCase();
+
+            // Usa el diccionario si ya existe una descripcion exacta.
+            if (DB[codigoAltura]) return DB[codigoAltura];
+
+            // Extrae el numero despues de H.
+            const match = codigoAltura.match(/^H(\d+(?:\.\d+)?)$/);
+
+            // Si no hay numero, devuelve el codigo original.
+            if (!match) return codigoAltura;
+
+            // Convierte H36 en 360mm, H72 en 720mm, etc.
+            const mm = Number.parseFloat(match[1]) * 10;
+
+            // Devuelve descripcion clara.
+            return `Altura ${codigoAltura} (${mm}mm)`;
+        }
+
+        // Traduce un token usando primero el diccionario completo.
+        function traducirToken(token) {
+            // Normaliza token.
+            const limpio = String(token || "").toUpperCase().trim();
+
+            // Si existe en DB, devuelve descripcion.
+            if (DB[limpio]) return DB[limpio];
+
+            // Si es altura, la interpreta.
+            if (/^H\d/.test(limpio)) return traducirAltura(limpio);
+
+            // Si es profundidad, la interpreta.
+            if (/^P\d/.test(limpio)) return traducirProfundidad(limpio);
+
+            // Si no se conoce, devuelve el codigo original.
+            return limpio;
+        }
+
+        // Busca el token mas largo conocido al inicio de un texto compacto.
+        function buscarTokenConocido(texto) {
+            // Ordena claves largas primero para evitar partir codigos compuestos.
+            const claves = Object.keys(DB).sort((a, b) => b.length - a.length);
+
+            // Devuelve la primera clave que coincida al inicio.
+            return claves.find(clave => texto.startsWith(clave)) || "";
         }
 
         // Renderiza todos los muebles agrupados por OP.
@@ -1548,8 +1784,8 @@
             // Normaliza el codigo.
             const codigo = String(cod || "").toUpperCase();
 
-            // Busca patrones comunes como B60, A80, S120, EB90.
-            const match = codigo.match(/\b(?:EB|EA|ES|EX|B|A|S|X|E)(\d{2,3})\b/);
+            // Busca letras iniciales completas seguidas del ancho, como B60, BS60 o BAR63.
+            const match = codigo.match(/\b[A-Z]+(\d{2,3})/);
 
             // Si no encuentra, busca el primer numero de 2 o 3 digitos.
             const fallback = codigo.match(/(\d{2,3})/);
