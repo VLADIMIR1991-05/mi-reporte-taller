@@ -106,7 +106,7 @@
             lista.innerHTML = "";
             if (data.length === 0) return;
 
-            const columnasDeseadas = ['tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
+            const columnasDeseadas = ['Tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
             const cabecerasExcel = Object.keys(data[0]);
             const mapaColumnas = {};
             columnasDeseadas.forEach(col => {
