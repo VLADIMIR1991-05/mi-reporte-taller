@@ -40,22 +40,14 @@
     <div id="lista"></div>
 
     <script>
-        // ==========================================
-        // BASE DE DATOS MAESTRA - CONSOLIDADO DE DOCUMENTOS
-        // ==========================================
         const DB_NOMENCLATURA = {
-            // Reglas Personalizadas previas del usuario
             'ML': 'Maletera', 'CM': 'Comodín', '3R': '3 Repisas', 'G3': '3 Gavetas', 'SI': 'Sistema Invisible', 'LI-J': 'Lado Izquierdo Jota', 'LD-J': 'Lado Derecho Jota',
-            
-            // Pestaña 1 y 2: Tipos Base y Alturas
             'B': 'Módulo Bajo', 'A': 'Módulo Alto', 'S': 'Módulo Suspendido', 'X': 'Módulo Auxiliar', 'E': 'Módulo Esquinero',
             'EB': 'Esquinero Bajo', 'EA': 'Esquinero Alto', 'EX': 'Esquinero Auxiliar', 'ES': 'Esquinero Suspendido',
             'H1': 'Altura H1 (190mm)', 'H2': 'Altura H2 (380mm)', 'H3': 'Altura H3 (570mm)', 'H4': 'Altura Estándar H4 (760mm)', 'H886': 'Altura Especial H886 (886mm)', 
             'H5': 'Altura H5 (950mm)', 'H6': 'Altura H6 (1140mm)', 'H7': 'Altura H7 (1330mm)', 'HE': 'Altura Auxiliar HE (1360mm)', 'H8': 'Altura Auxiliar H8 (1550mm)', 
             'H9': 'Altura Auxiliar H9 (1740mm)', 'H11': 'Altura Estándar Auxiliar H11 (2120mm)', 'H12': 'Altura Auxiliar H12 (2310mm)',
             'I': 'Apertura Izquierda', 'D': 'Apertura Derecha',
-            
-            // Pestaña 3: Módulos Bajos
             'BANDEJAS': 'Divisiones Verticales', 'F': 'Fregadero', 'ACK': 'Accesorio Kesseböhmer', 'OL': 'Organizador de Limpieza', 'SFR': 'Soporte Fregadero', 'AQUA': 'Protector Aquanon',
             'CAMP-MES': 'Campana Mesón', 'RM': 'Respaldo Removible', 'CMP-MES': 'Campana Mesón', 'CMP-IND': 'Campana Mesón Indurama', 'F-C/R': 'Fregadero con respaldo',
             'ACK-AB-PAR-1GI': 'Accesorio Kesseböhmer Abatible Paralelo con 1 Gaveta Interna', 'ACF-U': 'Accesorio FGV Fregadero U', 'ACF-B': 'Accesorio FGV Fregadero Basurero Redondo 10L',
@@ -63,30 +55,22 @@
             'HS-REJILLA': 'Horno Simple con Rejilla de Ventilación', 'MH': 'Microondas', 'CP': 'Calentador de Platos', 'ACV-BA': 'Accesorio Vibo Basurero', 'ACH-CO': 'Condimentero Hengel',
             'ACF-CO': 'Condimentero FGV', 'ACK-CO': 'Condimentero Kesseböhmer', 'ACV-CO': 'Condimentero Vibo', 'ACF-PP': 'Accesorio Planchador Retráctil Plegable FGV', 'DE': 'Despensa',
             'D-D': '2 Despensas', 'ACV-JINO': 'Accesorio Vibo Carrito Jino', 'FBAI': 'Fregadero con Basurero Derecha y Puerta Apertura Izquierda', 'FBAD': 'Fregadero con Basurero Izquierda y Puerta Apertura Derecha',
-            
-            // Pestaña 4 y 5: Módulos Altos y Plegables
             'TI': 'Tiradera Interna', 'AI': 'Asiento Iluminado (Base Vidrio + LED)', 'PTI60': 'Puerta Combinada Izquierda 60cm', 'PTD60': 'Puerta Combinada Derecha 60cm',
             'RDE': 'Repisero Despensa', 'BOT': 'Botellas', 'AB-SIM': 'Abatible Simple', 'AB-COM': 'Abatible Compás', 'AB-GIR': 'Abatible Giratorio', 'AB-PLE': 'Abatible Plegable',
             'ASM': 'Alto Sobre Mesón', 'EX': 'Extractor Visto', 'ACJ': 'Accesorio Jennair Incluido', 'ACS': 'Accesorio Sirius Incluido', 'EE': 'Extractor Embutido',
             'CP/J': 'Accesorio Jennair No Incluido', 'CP/S': 'Accesorio Sirius No Incluido', 'RF': 'Alto sobre Refrigerador / Complemento Refrigerador', 'ACF-EP': 'Accesorio FGV Escurre Platos',
             'ACL-TV': 'Accesorio Hafele Elevador TV', 'ACR-PE-SG': 'Accesorio Persiana Aluminio Sobre Mesón', 'ACR-PE-SM': 'Accesorio Persiana Aluminio Sobre Módulo', 'ACK-ELEV': 'Accesorio Elevador Kesseböhmer',
             'DACE-PPUSH': '2 Puertas Plegables Lado Derecho', 'IACE-PPUSH': '2 Puertas Plegables Lado Izquierdo', 'ACE-PPUSH': '4 Puertas Plegables',
-            
-            // Pestaña 6 y 7: Módulos Auxiliares y Micro/Hornos
             'R': 'Repisero', 'E': 'Escobero', 'ACH-DS': 'Accesorio Hengel Despensa Simple', 'ACV-DS': 'Accesorio Vibo Despensa Simple', 'ACH-DD': 'Accesorio Hengel Despensa Doble',
             'ACF-DD': 'Accesorio FGV Despensa Doble', 'ACF-DX': 'Accesorio FGV Despensa Extraíble', 'DM': 'Despensa Múltiple', 'ACP': 'Accesorio Peka', 'ACP-LIM': 'Accesorio de Limpieza Peka',
             'BP': 'Bandeja Libell', 'VIN-HOR': 'Vinera Horizontal', 'V-D-D-D': 'Vacío - Despensa - Despensa - Despensa', 'DEF': 'Despensa Fraccionada', 'REX': 'Repisa Extraíble',
             'HC': 'Horno Combinado (Microondas + Horno)', 'HT': 'Horno Triple (Espacio Calienta Platos)', 'TEK': 'Módulo Adaptado a Electrodoméstico Teka', 'REJILLA': 'Rejilla de Ventilación',
             'PG': 'Puerta Giratoria / Sistema Pocket EXL', 'REFRIG': 'Módulo para Embutir Refrigerador', 'G2I': '2 Gavetas Internas', 'CP': 'Complementario', 'DEC': 'Acabado Interno Decorativo', 'STC': 'Estructura Corta',
-            
-            // Pestaña 8, 9, 10, 11 y 12: Colecciones (Shaker, Aurora, Tradición, Line, Loft)
             'CT': 'Detalle Decorativo Estilo Shaker 2.0', 'AU': 'Detalle Decorativo Estilo Aurora', 'DESY': 'Desayunador', 'PATAE6-AU': 'Pata Decorativa Estilo Aurora',
             'CIL-CT': 'Cenefa de Iluminación', 'PEL-CT': 'Perfil Superior Tipo Puerta', 'PEL': 'Perfil para Tablero Iluminación Aurora', 'CRAUH8.6': 'Cornisa con Detalle Aurora',
             'E6': 'Engrosado 6cm', '1PA': '1 Pata Engrosada a 6cm', '2PA': '2 Patas Engrosadas a 6cm', 'LA': 'Lateral Alto', 'OTPE6-AU': 'Oreja de Ajuste con Detalle Decorativo Aurora',
             'CANTO': 'Oreja de Canto Aurora', 'QU': 'Cuatro', 'LIN': 'Line', 'LINE': 'Line', 'LIN-L-S': 'Tipo L Line', 'LIN-U-S': 'Tipo U Line', 'END': 'Enderezador',
             'MET': 'Estructura Metálica', 'E1': '1 Compartimento', 'E2S': '2 Compartimentos', 'C/R': 'Con Respaldo', 'S/R': 'Sin Respaldo',
-            
-            // Pestaña 4 (Componentes) y 5 (Complementos Generales)
             'TPM': 'Tapa Premesón', 'LID': 'Lateral Izquierdo Decorativo', 'LDD': 'Lateral Derecho Decorativo', 'LSP': 'Luz LED Spot', 'LBA': 'Luz LED Base', '2PULS': '2 Pulsadores Luz LED', 'LSU': 'Luz LED Superior',
             'BAXD': 'Base Decorativo/Crudo', 'TEXD': 'Techo Decorativo/Crudo', 'PUSH': 'Puerta Push', 'ON': 'Tip-On Gavetas', 'TOMCOR': 'Tomacorriente de Cajón', 'S/SL': 'Subdivisión 45 SL',
             'LLT': 'Luz LED Lateral Doble', 'LTI': 'Luz LED Lateral Izquierda', 'LTD': 'Luz LED Lateral Derecha', 'RV-EC': 'Repisa Vidrio Extra Claro', 'RV-BN': 'Repisa Vidrio Bronce Natural', 'LTC': 'Luz LED Tubo',
@@ -96,76 +80,17 @@
             'LATR': 'Lateral Alto Tipo Recto', 'LX': 'Lateral Auxiliar', 'LXTR': 'Lateral Auxiliar Tipo Recto', 'E8': 'Lateral Engrosado de 8cm', 'LVAENV': 'Lateral Visto Alto Envolvente', 'TAPA': 'Tapa',
             'INF': 'Envolvente Inferior de Mueble Alto', 'SUP': 'Envolvente Superior de Mueble Alto', 'E3': 'Engrosado 3cm', 'FBTA': 'Forramiento Bajo Tipo Armazón', 'FATA': 'Forramiento Alto Tipo Armazón',
             'FXTA': 'Forramiento Auxiliar Tipo Armazón', 'FBTR': 'Forramiento Bajo Tipo Recto', 'FXTR': 'Forramiento Auxiliar Tipo Recto', 'ST': 'Estructura de Isla', 'REP': 'Repisa', 'TAP': 'Repisa Interior',
-            
-            // Pestaña 6 y 7 (Mesones y Estructuras Mecánicas)
             'PM': 'Premesón Tablero Crudo', 'MES': 'Mesón', 'DIAM': 'Desayunador Diamante', 'SOP80': 'Soporte sobre Mesón para Estructura Desayunador',
             'CU': 'Cobre Texturizado', 'GF': 'Grafito Texturizado', 'NE': 'Negro Texturizado', 'DO': 'Dorado Texturizado', 'CG': 'Cacao Gold Mate', 'LU': 'Luna Semi Brillante'
         };
 
-        // ==========================================
-        // TRADUCTOR INDUSTRIAL INTELIGENTE
-        // ==========================================
         function obtenerNombre(cod) {
-    if (!cod) return "Código no definido";
-    let c = cod.toUpperCase().trim();
-    
-    // Si está directo en el diccionario, lo devuelve
-    if (DB_NOMENCLATURA[c]) return DB_NOMENCLATURA[c];
-
-    // Si es un código compuesto (ej: B60I-PUSH), busca por partes
-    return c.split('-').map(parte => {
-        return DB_NOMENCLATURA[parte] || parte;
-    }).join(' + ');
-}
-
-                // 2. Manejo Dinámico: Maleteras (ML + Cantidad)
-                if (seg.startsWith('ML')) {
-                    let cant = seg.replace('ML', '');
-                    traducciones.push(`${DB_NOMENCLATURA['ML'] || 'Maletera'} (${cant} unidad${cant > 1 ? 'es' : ''})`);
-                    return;
-                }
-
-                // 3. Manejo Dinámico: Comodines o Cuerpos de Mueble con Ancho (CM + Número)
-                if (seg.startsWith('CM')) {
-                    let ancho = seg.replace('CM', '');
-                    traducciones.push(`${DB_NOMENCLATURA['CM'] || 'Comodín'} de ${ancho}0mm de ancho`);
-                    return;
-                }
-
-                // 4. Desarmado Extremo para Códigos Pegados Iniciales (Ej: B60I, A90D, X45)
-                if (index === 0 && !codigoLimpio.includes('-')) {
-                    let matchBase = seg.match(/^([B|A|S|X|E|EB|EA|EX|ES]+)(\d+)([I|D]?)$/);
-                    if (matchBase) {
-                        let tipo = DB_NOMENCLATURA[matchBase[1]] || matchBase[1];
-                        let ancho = matchBase[2] + "0mm de ancho";
-                        let lado = matchBase[3] ? ` (${DB_NOMENCLATURA[matchBase[3]]})` : '';
-                        traducciones.push(`${tipo} de ${ancho}${lado}`);
-                        return;
-                    }
-                }
-
-                // 5. Coincidencias exactas en el diccionario extendido
-                if (DB_NOMENCLATURA[seg]) {
-                    traducciones.push(DB_NOMENCLATURA[seg]);
-                    return;
-                }
-
-                // 6. Si es un número limpio en segmentos avanzados, interpretarlo como Medida General
-                if (/^\d+$/.test(seg)) {
-                    traducciones.push(`Medida nominal ${seg}0mm`);
-                    return;
-                }
-
-                // Si no se encuentra, se añade tal cual
-                traducciones.push(seg);
-            });
-            
-            return traducciones.filter(t => t !== '').join(', ');
+            if (!cod) return "Código no definido";
+            let c = cod.toUpperCase().trim();
+            if (DB_NOMENCLATURA[c]) return DB_NOMENCLATURA[c];
+            return c.split('-').map(parte => DB_NOMENCLATURA[parte] || parte).join(' + ');
         }
 
-        // ==========================================
-        // CONTROLADOR DE EXCEL / LECTURA
-        // ==========================================
         document.getElementById('upload').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = (event) => {
@@ -176,58 +101,48 @@
             reader.readAsArrayBuffer(e.target.files[0]);
         });
 
-        // ==========================================
-        // SISTEMA DE RENDERIZADO VISUAL
-        // ==========================================
         function renderizar(data) {
-    let lista = document.getElementById('lista');
-    lista.innerHTML = "";
-    if (data.length === 0) return;
+            let lista = document.getElementById('lista');
+            lista.innerHTML = "";
+            if (data.length === 0) return;
 
-    // 1. Mapeo inteligente de columnas
-    // Buscamos las claves reales del objeto ignorando mayúsculas/minúsculas
-    const columnasDeseadas = ['tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
-    
-    // Mapeamos los nombres del Excel a nuestras columnas esperadas
-    const cabecerasExcel = Object.keys(data[0]);
-    const mapaColumnas = {};
-    columnasDeseadas.forEach(col => {
-        // Busca en el excel la columna que coincida ignorando mayúsculas
-        mapaColumnas[col] = cabecerasExcel.find(c => c.toLowerCase() === col.toLowerCase());
-    });
+            const columnasDeseadas = ['tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
+            const cabecerasExcel = Object.keys(data[0]);
+            const mapaColumnas = {};
+            columnasDeseadas.forEach(col => {
+                mapaColumnas[col] = cabecerasExcel.find(c => c.toLowerCase() === col.toLowerCase());
+            });
 
-    let ops = [...new Set(data.map(r => r.op || "Sin OP"))];
-    let htmlAcumulado = "";
+            let ops = [...new Set(data.map(r => r.op || "Sin OP"))];
+            let htmlAcumulado = "";
 
-    ops.forEach(op => {
-        htmlAcumulado += `<h1 class="op-title">OP: ${op}</h1>`;
-        let mueblesEnOP = data.filter(r => (r.op || "Sin OP") == op);
-        let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
+            ops.forEach(op => {
+                htmlAcumulado += `<h1 class="op-title">OP: ${op}</h1>`;
+                let mueblesEnOP = data.filter(r => (r.op || "Sin OP") == op);
+                let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
 
-        codigos.forEach(cod => {
-            let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
-            let nombreDescifrado = obtenerNombre(cod);
-            
-            // Calculamos ancho para el validador
-            let matchAncho = cod.match(/(?:CM|\D+)(\d+)/);
-            let anchoCalculado = matchAncho ? parseInt(matchAncho[1]) * 10 : 0;
-            let textoUniversal = JSON.stringify(items).toUpperCase();
+                codigos.forEach(cod => {
+                    let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
+                    let nombreDescifrado = obtenerNombre(cod);
+                    let matchAncho = cod.toString().match(/(?:CM|\D+)(\d+)/);
+                    let anchoCalculado = matchAncho ? parseInt(matchAncho[1]) * 10 : 0;
+                    let textoUniversal = JSON.stringify(items).toUpperCase();
 
-            htmlAcumulado += `
-                <div class="mueble-container" data-ancho="${anchoCalculado}" data-universal="${textoUniversal}" data-codpuro="${cod}">
-                    <h2>${cod}</h2>
-                    <span class="desc-tag">${nombreDescifrado}</span>
-                    <table>
-                        <tr>${columnasDeseadas.map(c => `<th>${c}</th>`).join('')}</tr>
-                        ${items.map(r => `<tr>
-                            ${columnasDeseadas.map(c => `<td>${r[mapaColumnas[c]] || ''}</td>`).join('')}
-                        </tr>`).join('')}
-                    </table>
-                </div>`;
-        });
-    });
-    lista.innerHTML = htmlAcumulado;
-}
+                    htmlAcumulado += `
+                        <div class="mueble-container" data-ancho="${anchoCalculado}" data-universal="${textoUniversal}" data-codpuro="${cod}">
+                            <h2>${cod}</h2>
+                            <span class="desc-tag">${nombreDescifrado}</span>
+                            <table>
+                                <tr>${columnasDeseadas.map(c => `<th>${c}</th>`).join('')}</tr>
+                                ${items.map(r => `<tr>
+                                    ${columnasDeseadas.map(c => `<td>${r[mapaColumnas[c]] !== undefined ? r[mapaColumnas[c]] : ''}</td>`).join('')}
+                                </tr>`).join('')}
+                            </table>
+                        </div>`;
+                });
+            });
+            lista.innerHTML = htmlAcumulado;
+        }
 
         function filtrarUniversal() {
             let filtros = Array.from(document.querySelectorAll('.f-input')).map(i => i.value.toUpperCase().trim()).filter(v => v !== "");
@@ -236,9 +151,6 @@
             });
         }
 
-        // ==========================================
-        // MOTOR DE ANÁLISIS DE DESCUENTOS Y TOLERANCIAS
-        // ==========================================
         function validarTodo() {
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let error = false;
@@ -248,28 +160,23 @@
                 let tipo = codMueble[0]; 
                 let anchoTotal = parseInt(div.dataset.ancho);
                 
-                // Profundidades paramétricas por defecto del manual técnico
+                // Fórmula: Ancho Total - (Grosor 18mm * 2) - 1mm fuga = 37mm
+                const descuento = 37; 
                 let profEsperada = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
 
                 div.querySelectorAll('tr').forEach((tr, index) => {
-                    if(index === 0) return; 
+                    if(index === 0 || !tr.cells[2]) return; 
                     
-                    let cellPieza = tr.cells[2];
-                    if(!cellPieza) return;
-                    
-                    let p = cellPieza.innerText.toUpperCase();
-                    let m1 = parseInt(tr.cells[4].innerText) || 0;
-                    let m2 = parseInt(tr.cells[5].innerText) || 0;
-                    let descuento = 37; // Holgura lateral estándar de ensamble
+                    let p = tr.cells[2]?.innerText?.toUpperCase() || "";
+                    let m1 = parseInt(tr.cells[4]?.innerText) || 0;
+                    let m2 = parseInt(tr.cells[5]?.innerText) || 0;
 
-                    // Verificación física de Bases y Techos
                     if (p.includes('BASE') || p.includes('TECHO') || p.includes('AJ_')) {
-                        if (anchoTotal > 0 && m1 !== (anchoTotal - descuento) && m2 !== (anchoTotal - descuento)) {
+                        if (anchoTotal > 0 && Math.abs(m1 - (anchoTotal - descuento)) > 2 && Math.abs(m2 - (anchoTotal - descuento)) > 2) {
                             error = true;
                         }
                     }
                     
-                    // Verificación de profundidad en laterales estructurales
                     if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
                         if (m1 !== profEsperada && m2 !== profEsperada) {
                             error = true;
