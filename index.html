@@ -106,25 +106,17 @@
         // TRADUCTOR INDUSTRIAL INTELIGENTE
         // ==========================================
         function obtenerNombre(cod) {
-            if (!cod) return "Código vacío";
-            let codigoLimpio = cod.toUpperCase().trim();
-            let traducciones = [];
-            
-            // Procesamiento segmentado si tiene guiones
-            let segmentos = codigoLimpio.includes('-') ? codigoLimpio.split('-') : [codigoLimpio];
-            
-            segmentos.forEach((seg, index) => {
-                if (seg === '') return;
+    if (!cod) return "Código no definido";
+    let c = cod.toUpperCase().trim();
+    
+    // Si está directo en el diccionario, lo devuelve
+    if (DB_NOMENCLATURA[c]) return DB_NOMENCLATURA[c];
 
-                // 1. Manejo Combinado Especial: LI-J o LD-J
-                if ((seg === 'LI' || seg === 'LD') && segmentos[index + 1] === 'J') {
-                    let combinacion = seg + '-J';
-                    if (DB_NOMENCLATURA[combinacion]) {
-                        traducciones.push(DB_NOMENCLATURA[combinacion]);
-                        segmentos[index + 1] = ''; 
-                    }
-                    return;
-                }
+    // Si es un código compuesto (ej: B60I-PUSH), busca por partes
+    return c.split('-').map(parte => {
+        return DB_NOMENCLATURA[parte] || parte;
+    }).join(' + ');
+}
 
                 // 2. Manejo Dinámico: Maleteras (ML + Cantidad)
                 if (seg.startsWith('ML')) {
@@ -188,48 +180,41 @@
         // SISTEMA DE RENDERIZADO VISUAL
         // ==========================================
         function renderizar(data) {
-            let lista = document.getElementById('lista');
-            lista.innerHTML = "";
-            let ops = [...new Set(data.map(r => r.op))];
+    let lista = document.getElementById('lista');
+    lista.innerHTML = "";
+    if (data.length === 0) return;
+
+    // Definimos el orden exacto de las columnas que quieres ver
+    const columnasDeseadas = ['tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
+    
+    let ops = [...new Set(data.map(r => r.op))];
+    let htmlAcumulado = "";
+
+    ops.forEach(op => {
+        if (!op) return;
+        htmlAcumulado += `<h1 class="op-title">OP: ${op}</h1>`;
+        let mueblesEnOP = data.filter(r => r.op == op);
+        let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
+
+        codigos.forEach(cod => {
+            let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
+            let nombreDescifrado = obtenerNombre(cod);
             
-            let htmlAcumulado = ""; 
-            
-            ops.forEach(op => {
-                if (!op) return;
-                htmlAcumulado += `<h1 class="op-title">OP: ${op}</h1>`;
-                let mueblesEnOP = data.filter(r => r.op == op);
-                let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
-                
-                codigos.forEach(cod => {
-                    if (!cod) return;
-                    let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
-                    let esEspecial = cod.toUpperCase().includes('ESP') || cod.toUpperCase().includes('ESPECIAL');
-                    let nombreDescifrado = obtenerNombre(cod);
-                    
-                    // Extrae el ancho para reglas geométricas de validación técnica
-                    let matchAncho = cod.match(/(?:CM|\D+)(\d+)/);
-                    let anchoCalculado = matchAncho ? parseInt(matchAncho[1]) * 10 : 0;
-                    
-                    let textoUniversal = (items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod + " " + nombreDescifrado).toUpperCase();
-                    
-                    htmlAcumulado += `
-                        <div class="mueble-container" data-ancho="${anchoCalculado}" data-universal="${textoUniversal}" data-codpuro="${cod}">
-                            <span class="op-tag">OP: ${op}</span>
-                            ${esEspecial ? '<span class="esp-tag">[MÓDULO ESPECIAL]</span>' : ''}
-                            <h2><span class="cod-mueble-text">${cod}</span> <small style="color:#999; font-size:0.6em">(Fila C${(items[0].__rowNum__ || 0) + 2})</small></h2>
-                            <span class="desc-tag">${nombreDescifrado}</span>
-                            <table>
-                                <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th></tr>
-                                ${items.map(r => `<tr>
-                                    <td>${r['Tipo ']||r['Tipo']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
-                                    <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
-                                </tr>`).join('')}
-                            </table>
-                        </div>`;
-                });
-            });
-            lista.innerHTML = htmlAcumulado;
-        }
+            htmlAcumulado += `
+                <div class="mueble-container" data-codpuro="${cod}">
+                    <h2>${cod}</h2>
+                    <span class="desc-tag">${nombreDescifrado}</span>
+                    <table>
+                        <tr>${columnasDeseadas.map(c => `<th>${c.toUpperCase()}</th>`).join('')}</tr>
+                        ${items.map(r => `<tr>
+                            ${columnasDeseadas.map(c => `<td>${r[c] || ''}</td>`).join('')}
+                        </tr>`).join('')}
+                    </table>
+                </div>`;
+        });
+    });
+    lista.innerHTML = htmlAcumulado;
+}
 
         function filtrarUniversal() {
             let filtros = Array.from(document.querySelectorAll('.f-input')).map(i => i.value.toUpperCase().trim()).filter(v => v !== "");
