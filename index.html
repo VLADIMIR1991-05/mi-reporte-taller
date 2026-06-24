@@ -184,30 +184,43 @@
     lista.innerHTML = "";
     if (data.length === 0) return;
 
-    // Definimos el orden exacto de las columnas que quieres ver
+    // 1. Mapeo inteligente de columnas
+    // Buscamos las claves reales del objeto ignorando mayúsculas/minúsculas
     const columnasDeseadas = ['tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
     
-    let ops = [...new Set(data.map(r => r.op))];
+    // Mapeamos los nombres del Excel a nuestras columnas esperadas
+    const cabecerasExcel = Object.keys(data[0]);
+    const mapaColumnas = {};
+    columnasDeseadas.forEach(col => {
+        // Busca en el excel la columna que coincida ignorando mayúsculas
+        mapaColumnas[col] = cabecerasExcel.find(c => c.toLowerCase() === col.toLowerCase());
+    });
+
+    let ops = [...new Set(data.map(r => r.op || "Sin OP"))];
     let htmlAcumulado = "";
 
     ops.forEach(op => {
-        if (!op) return;
         htmlAcumulado += `<h1 class="op-title">OP: ${op}</h1>`;
-        let mueblesEnOP = data.filter(r => r.op == op);
+        let mueblesEnOP = data.filter(r => (r.op || "Sin OP") == op);
         let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
 
         codigos.forEach(cod => {
             let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
             let nombreDescifrado = obtenerNombre(cod);
             
+            // Calculamos ancho para el validador
+            let matchAncho = cod.match(/(?:CM|\D+)(\d+)/);
+            let anchoCalculado = matchAncho ? parseInt(matchAncho[1]) * 10 : 0;
+            let textoUniversal = JSON.stringify(items).toUpperCase();
+
             htmlAcumulado += `
-                <div class="mueble-container" data-codpuro="${cod}">
+                <div class="mueble-container" data-ancho="${anchoCalculado}" data-universal="${textoUniversal}" data-codpuro="${cod}">
                     <h2>${cod}</h2>
                     <span class="desc-tag">${nombreDescifrado}</span>
                     <table>
-                        <tr>${columnasDeseadas.map(c => `<th>${c.toUpperCase()}</th>`).join('')}</tr>
+                        <tr>${columnasDeseadas.map(c => `<th>${c}</th>`).join('')}</tr>
                         ${items.map(r => `<tr>
-                            ${columnasDeseadas.map(c => `<td>${r[c] || ''}</td>`).join('')}
+                            ${columnasDeseadas.map(c => `<td>${r[mapaColumnas[c]] || ''}</td>`).join('')}
                         </tr>`).join('')}
                     </table>
                 </div>`;
