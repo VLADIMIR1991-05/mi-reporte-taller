@@ -106,11 +106,20 @@
             lista.innerHTML = "";
             if (data.length === 0) return;
 
+            // Definimos las columnas que queremos mostrar
             const columnasDeseadas = ['Tipo', 'cod_mueble', 'cod_pieza', 'cant_piezas', 'medida1', 'medida2', 'l1', 'l2', 'c1', 'c2', 'nomueble'];
+            
             const cabecerasExcel = Object.keys(data[0]);
             const mapaColumnas = {};
+
             columnasDeseadas.forEach(col => {
-                mapaColumnas[col] = cabecerasExcel.find(c => c.toLowerCase() === col.toLowerCase());
+                // PRIORIDAD: Busca el nombre exacto "Tipo" primero
+                if (col === 'Tipo' && cabecerasExcel.includes('Tipo')) {
+                    mapaColumnas[col] = 'Tipo';
+                } else {
+                    // Si no, busca ignorando mayúsculas/minúsculas
+                    mapaColumnas[col] = cabecerasExcel.find(c => c.toLowerCase() === col.toLowerCase());
+                }
             });
 
             let ops = [...new Set(data.map(r => r.op || "Sin OP"))];
