@@ -663,6 +663,7 @@
             H2: "Altura H2 (380mm)",
             H3: "Altura H3 (570mm)",
             H4: "Altura Estandar H4 (760mm)",
+            "H8.6": "Altura H8.6 (860mm)",
             H886: "Altura Especial H886 (886mm)",
             H5: "Altura H5 (950mm)",
             H6: "Altura H6 (1140mm)",
@@ -672,6 +673,7 @@
             H9: "Altura Auxiliar H9 (1740mm)",
             H11: "Altura Estandar Auxiliar H11 (2120mm)",
             H12: "Altura Auxiliar H12 (2310mm)",
+            HZ: "Henzo",
             I: "Apertura Izquierda",
             D: "Apertura Derecha",
             BANDEJAS: "Divisiones Verticales",
@@ -731,7 +733,7 @@
             "CIL-CT": "Cenefa de Iluminacion",
             "PEL-CT": "Perfil Superior Tipo Puerta",
             PEL: "Perfil para Tablero Iluminacion Aurora",
-            "CRAUH8.6": "Cornisa con Detalle Aurora",
+            "CRAU": "Cornisa con Detalle Aurora",
             E6: "Engrosado 6cm",
             "1PA": "1 Pata Engrosada a 6cm",
             "2PA": "2 Patas Engrosadas a 6cm",
@@ -793,13 +795,13 @@
             TAPA: "Tapa",
             INF: "Envolvente Inferior de Mueble Alto",
             SUP: "Envolvente Superior de Mueble Alto",
-            E3: "Engrosado 3cm",
+            E3: "Engrosado 30-36mm",
             FBTA: "Forramiento Bajo Tipo Armazon",
             FATA: "Forramiento Alto Tipo Armazon",
             FXTA: "Forramiento Auxiliar Tipo Armazon",
             FBTR: "Forramiento Bajo Tipo Recto",
             FXTR: "Forramiento Auxiliar Tipo Recto",
-            ST: "Estructura de Isla",
+            ST: "Estructura",
             REP: "Repisa",
             TAP: "Repisa Interior",
             PM: "Premeson Tablero Crudo",
@@ -878,7 +880,7 @@
         const COLS_REQUERIDAS = ["op", "cod_mueble", "cod_pieza", "medida1", "medida2"];
 
         // Margen permitido en milimetros al comparar medidas.
-        const TOLERANCIA_MM = 2;
+        const TOLERANCIA_MM = 0;
 
         // Descuento usado para ancho de base/techo: 18mm x 2 laterales + 1mm fuga.
         const DESCUENTO_ANCHO = 37;
