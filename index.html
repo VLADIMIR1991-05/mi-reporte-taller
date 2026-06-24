@@ -2,85 +2,137 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Validador de Despiece Completo - Madeval</title>
+    <title>Validador de Despiece - Madeval</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .mueble-card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; border-left: 10px solid #bdc3c7; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .mueble-card.especial { border-left-color: #e74c3c; }
-        .esp-label { color: #e74c3c; font-weight: 800; font-size: 0.75em; text-transform: uppercase; }
-        h2 { margin: 0; font-size: 1.2em; }
-        .desc-text { font-size: 0.9em; color: #555; margin-bottom: 10px; display: block; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-        th { background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px; text-align: left; }
-        td { border: 1px solid #dee2e6; padding: 8px; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .f-input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 120px; }
+        button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        h1.op-title { color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .esp-tag { color: #e74c3c; font-weight: 800; font-size: 0.75em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .desc-tag { font-size: 0.9em; color: #d35400; font-weight: bold; display: block; margin-bottom: 10px; }
+        .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
+        .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
+        .op-tag { font-size: 11px; color: #fff; background: #95a5a6; padding: 2px 6px; border-radius: 4px; float: right; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f8f9fa; padding: 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #eee; }
+        td { padding: 8px; border: 1px solid #eee; text-align: center; font-size: 13px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>Validador de Despiece Maestro</h1>
-    <input type="file" id="upload" accept=".xlsx, .csv">
-</div>
-<div id="lista"></div>
+    <div class="header">
+        <h1>Validador de Despiece Maestro</h1>
+        <input type="file" id="upload" accept=".xlsx, .csv">
+    </div>
 
-<script>
-    // Base de datos completa consolidada de tus archivos
-    const NOMENCLATURA = {
-        // Estructuras Mesones
-        'ESTR-DES-A1': 'Estructura desayunador A1', 'ESTR-DES-A2': 'Estructura desayunador A2',
-        'ESTR-DES-B1': 'Estructura desayunador B1', 'ESTR-DES-C1': 'Estructura desayunador C1',
-        'SOP80': 'Soporte sobre mesón',
-        // Mesones
-        'PM': 'Premesón tablero crudo', 'MES': 'Mesón', 'DIAM': 'Desayunador Diamante',
-        'GOTI-150P240': 'Desayunador Gota Izquierdo 150x240', 'GOTD-150P240': 'Desayunador Gota Derecho 150x240',
-        // Módulos Horno/Auxiliares
-        'MH': 'Módulo Microondas', 'HS': 'Horno Simple', 'HC': 'Horno Combinado', 'HT': 'Horno Triple',
-        'DE': 'Despensa', 'DM': 'Despensa Múltiple', 'DEF': 'Despensa Fraccionada', 'PG': 'Puerta Giratoria EXL',
-        // Complementos y Componentes
-        'TAPA': 'Tapa', 'REP': 'Repisa', 'LB': 'Lateral Bajo', 'LA': 'Lateral Alto', 'LX': 'Lateral Auxiliar',
-        'CIL-CT': 'Cenefa de iluminación', 'PEL-CT': 'Perfil Superior tipo puerta',
-        'AB-SIM': 'Abatible Simple', 'AB-COM': 'Abatible Compás', 'AB-PLE': 'Abatible Plegable',
-        '-PUSH': 'Puerta Push', '-LSP': 'Luz LED Spot', '-LBA': 'Luz LED Base', '-LSU': 'Luz LED Superior'
-    };
+    <div class="controls">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 1...">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 2...">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 3...">
+        <button onclick="validarTodo()">VALIDAR ESTRUCTURA</button>
+    </div>
 
-    function obtenerDescripcion(cod) {
-        if (!cod) return "Sin código";
-        return NOMENCLATURA[cod] || "Componente estándar o personalizado";
-    }
+    <div id="lista"></div>
 
-    document.getElementById('upload').addEventListener('change', function(e) {
-        let reader = new FileReader();
-        reader.onload = (ev) => {
-            let data = XLSX.utils.sheet_to_json(XLSX.read(ev.target.result, {type: 'array'}).Sheets[0]);
-            renderizar(data);
+    <script>
+        const DB_NOMENCLATURA = {
+            'ESTR-DES-A1': 'Estructura desayunador A1', 'ESTR-DES-A2': 'Estructura desayunador A2', 'ESTR-DES-B1': 'Estructura desayunador B1',
+            'PM': 'Premesón tablero crudo', 'MES': 'Mesón', 'DIAM': 'Desayunador Diamante', 'GOTI-150P240': 'Desayunador Gota Izq 150x240',
+            'GOTD-150P240': 'Desayunador Gota Der 150x240', 'MH': 'Módulo Microondas', 'HS': 'Horno Simple', 'HC': 'Horno Combinado',
+            'HT': 'Horno Triple', 'DE': 'Despensa', 'DM': 'Despensa Múltiple', 'DEF': 'Despensa Fraccionada', 'AB-SIM': 'Abatible Simple',
+            'AB-COM': 'Abatible Compás', 'AB-PLE': 'Abatible Plegable', 'MET': 'Estructura Metálica Loft', 'LIN': 'Line', 
+            'CIL-CT': 'Cenefa de iluminación', 'PEL-CT': 'Perfil Superior tipo puerta', 'AU': 'Detalle Aurora', 'CT': 'Shaker 2.0',
+            'TAPA': 'Tapa', 'REP': 'Repisa', 'LB': 'Lateral Bajo', 'LA': 'Lateral Alto', 'LX': 'Lateral Auxiliar', 'PG': 'Puerta Giratoria EXL'
         };
-        reader.readAsArrayBuffer(e.target.files[0]);
-    });
 
-    function renderizar(data) {
-        let lista = document.getElementById('lista');
-        lista.innerHTML = "";
-        data.forEach(r => {
-            let cod = r.cod_mueble || "";
-            let esEspecial = cod.toUpperCase().includes('ESP') || cod.toUpperCase().includes('ESPECIAL');
-            
-            let div = document.createElement('div');
-            div.className = 'mueble-card' + (esEspecial ? ' especial' : '');
-            div.innerHTML = `
-                ${esEspecial ? '<span class="esp-label">[MÓDULO ESPECIAL]</span>' : ''}
-                <h2>${cod}</h2>
-                <span class="desc-text">${obtenerDescripcion(cod)}</span>
-                <table>
-                    <tr><th>Pieza</th><th>M1</th><th>M2</th></tr>
-                    <tr><td>${r.cod_pieza || 'N/A'}</td><td>${r.medida1 || 0}</td><td>${r.medida2 || 0}</td></tr>
-                </table>
-            `;
-            lista.appendChild(div);
+        function obtenerNombre(cod) {
+            return DB_NOMENCLATURA[cod] || "Elemento no catalogado";
+        }
+
+        document.getElementById('upload').addEventListener('change', function(e) {
+            let reader = new FileReader();
+            reader.onload = (event) => {
+                let wb = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
+                let data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {raw:true});
+                renderizar(data);
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
         });
-    }
-</script>
+
+        function renderizar(data) {
+            let lista = document.getElementById('lista');
+            lista.innerHTML = "";
+            let ops = [...new Set(data.map(r => r.op))];
+            
+            ops.forEach(op => {
+                lista.innerHTML += `<h1 class="op-title">OP: ${op}</h1>`;
+                let mueblesEnOP = data.filter(r => r.op == op);
+                let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
+                
+                codigos.forEach(cod => {
+                    let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
+                    let esEspecial = cod.toUpperCase().includes('ESP') || cod.toUpperCase().includes('ESPECIAL');
+                    let nombreDescifrado = obtenerNombre(cod);
+                    
+                    let div = document.createElement('div');
+                    div.className = 'mueble-container';
+                    div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
+                    div.dataset.universal = (items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod + " " + nombreDescifrado).toUpperCase();
+                    
+                    div.innerHTML = `
+                        <span class="op-tag">OP: ${op}</span>
+                        ${esEspecial ? '<span class="esp-tag">[MÓDULO ESPECIAL]</span>' : ''}
+                        <h2>${cod} <small style="color:#999; font-size:0.6em">(Fila C${(items[0].__rowNum__ || 0) + 2})</small></h2>
+                        <span class="desc-tag">${nombreDescifrado}</span>
+                        <table>
+                            <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th></tr>
+                            ${items.map(r => `<tr>
+                                <td>${r['Tipo ']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
+                                <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
+                            </tr>`).join('')}
+                        </table>`;
+                    lista.appendChild(div);
+                });
+            });
+        }
+
+        function filtrarUniversal() {
+            let filtros = Array.from(document.querySelectorAll('.f-input')).map(i => i.value.toUpperCase().trim()).filter(v => v !== "");
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                div.style.display = filtros.every(f => div.dataset.universal.includes(f)) ? "" : "none";
+            });
+        }
+
+        function validarTodo() {
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                let error = false;
+                let codMueble = div.querySelector('h2').innerText;
+                let tipo = codMueble[0];
+                let anchoTotal = parseInt(div.dataset.ancho);
+                let profEsperada = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
+
+                div.querySelectorAll('tr').forEach(tr => {
+                    if(!tr.cells[2] || tr.cells[2].innerText === 'Pieza') return;
+                    let p = tr.cells[2].innerText.toUpperCase();
+                    let m1 = parseInt(tr.cells[4].innerText) || 0;
+                    let m2 = parseInt(tr.cells[5].innerText) || 0;
+                    let descuento = 37; // Descuento estándar
+
+                    if (p.includes('BASE') || p.includes('TECHO') || p.includes('AJ_')) {
+                        if (m1 !== (anchoTotal - descuento) && m2 !== (anchoTotal - descuento)) error = true;
+                    }
+                    if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
+                        if (m1 !== profEsperada && m2 !== profEsperada) error = true;
+                    }
+                });
+                div.classList.add(error ? 'err' : 'ok');
+            });
+        }
+    </script>
 </body>
 </html>
