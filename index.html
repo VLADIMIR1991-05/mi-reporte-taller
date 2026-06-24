@@ -2,32 +2,35 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Validador de Despiece - Madeval</title>
+    <title>Validador de Despiece Universal</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .controls { background: white; padding: 20px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-        .f-input { padding: 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 150px; }
+        .f-input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 120px; }
         button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .mueble-container { background: white; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; border-radius: 8px; }
+        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
         .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #f8f9fa; padding: 10px; font-size: 11px; text-transform: uppercase; }
-        td { padding: 8px; border-bottom: 1px solid #eee; text-align: center; font-size: 13px; }
+        th { background: #f8f9fa; padding: 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #eee; }
+        td { padding: 8px; border: 1px solid #eee; text-align: center; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Validador de Despiece</h1>
+        <h1>Validador de Despiece (Filtros Universales)</h1>
         <input type="file" id="upload" accept=".xlsx, .csv">
     </div>
 
     <div class="controls">
-        <input type="text" class="f-input" onkeyup="filtrar()" placeholder="Filtro...">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 1...">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 2...">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 3...">
+        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 4...">
         <button onclick="validarTodo()">VALIDAR ESTRUCTURA</button>
     </div>
 
@@ -55,16 +58,33 @@
                 div.className = 'mueble-container';
                 div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
                 
+                // --- FILTRO UNIVERSAL: Convertimos toda la fila a un solo string ---
+                let textoBusqueda = items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod;
+                div.dataset.universal = textoBusqueda.toUpperCase();
+                
                 div.innerHTML = `<h2>${cod}</h2>
                     <table>
                         <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
                         ${items.map(r => `<tr>
-                            <td>${r['Tipo ']}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
+                            <td>${r['Tipo ']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
                             <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
                             <td>${r.l1||''}</td><td>${r.l2||''}</td><td>${r.c1||''}</td><td>${r.c2||''}</td>
                         </tr>`).join('')}
                     </table>`;
                 lista.appendChild(div);
+            });
+        }
+
+        function filtrarUniversal() {
+            let inputs = document.querySelectorAll('.f-input');
+            // Recogemos todos los filtros que no estén vacíos
+            let filtros = Array.from(inputs).map(i => i.value.toUpperCase().trim()).filter(v => v !== "");
+            
+            document.querySelectorAll('.mueble-container').forEach(div => {
+                let textoContenedor = div.dataset.universal;
+                // Verificamos que el contenedor cumpla con TODOS los filtros activos (Lógica AND)
+                let esVisible = filtros.every(f => textoContenedor.includes(f));
+                div.style.display = esVisible ? "" : "none";
             });
         }
 
@@ -74,38 +94,25 @@
                 let codMueble = div.querySelector('h2').innerText;
                 let tipo = codMueble[0];
                 let anchoTotal = parseInt(div.dataset.ancho);
-                
-                // Profundidad según tipo (Incluyendo descuento de 20mm de puerta/fuga)
                 let profEsperada = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
 
                 div.querySelectorAll('tr').forEach(tr => {
-                    let p = tr.cells[2]?.innerText.toUpperCase() || ""; // Columna Pieza
-                    let m1 = parseInt(tr.cells[4]?.innerText) || 0;    // Columna M1
-                    let m2 = parseInt(tr.cells[5]?.innerText) || 0;    // Columna M2
-                    let job = tr.cells[1]?.innerText || "";            // Columna Job (Espesor)
+                    let p = tr.cells[2]?.innerText.toUpperCase() || "";
+                    let m1 = parseInt(tr.cells[4]?.innerText) || 0;
+                    let m2 = parseInt(tr.cells[5]?.innerText) || 0;
+                    let job = tr.cells[1]?.innerText || "";
 
-                    // 1. Detección de espesor dinámico
                     let descuento = job.includes('15') ? 31 : 37;
 
-                    // 2. Validar Bases/Techos/Ajustes (Ancho - Descuento)
                     if (p.includes('BASE') || p.includes('TECHO') || p.includes('AJ_')) {
-                        let target = anchoTotal - descuento;
-                        if (m1 !== target && m2 !== target) error = true;
+                        if (m1 !== (anchoTotal - descuento) && m2 !== (anchoTotal - descuento)) error = true;
                     }
 
-                    // 3. Validar Profundidad (Laterales, Bases, Techos, Ajustes)
                     if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
                         if (m1 !== profEsperada && m2 !== profEsperada) error = true;
                     }
                 });
                 div.className = 'mueble-container ' + (error ? 'err' : 'ok');
-            });
-        }
-
-        function filtrar() {
-            let val = document.querySelector('.f-input').value.toUpperCase();
-            document.querySelectorAll('.mueble-container').forEach(div => {
-                div.style.display = div.innerText.includes(val) ? "" : "none";
             });
         }
     </script>
