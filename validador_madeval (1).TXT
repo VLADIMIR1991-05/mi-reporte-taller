@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Validador de Despiece Maestro - Madeval</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a2535;
+            --accent: #2980b9;
+            --accent2: #16a085;
+            --bg: #eef1f5;
+            --card: #ffffff;
+            --border: #d5dde8;
+            --err: #e74c3c;
+            --ok: #27ae60;
+            --warn: #f39c12;
+            --text: #2c3e50;
+            --muted: #7f8c8d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 18px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .header-left p {
+            font-size: 0.75rem;
+            color: #8da4be;
+            margin-top: 2px;
+        }
+
+        .file-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent);
+            color: white;
+            padding: 9px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .file-label:hover { background: #1a6699; }
+        #upload { display: none; }
+
+        /* ── CONTROLES ── */
+        .controls {
+            background: white;
+            padding: 14px 28px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .f-input {
+            padding: 9px 13px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            flex: 1;
+            min-width: 130px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+            background: #f8fafc;
+        }
+
+        .f-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+        }
+
+        .f-input::placeholder { color: #aab4be; }
+
+        .btn-validar {
+            background: var(--accent2);
+            color: white;
+            border: none;
+            padding: 9px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-validar:hover { background: #0e7a63; }
+
+        .btn-limpiar {
+            background: #ecf0f1;
+            color: #555;
+            border: 1px solid var(--border);
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .btn-limpiar:hover { background: #dde1e5; }
+
+        /* ── CONTADOR ── */
+        .stats-bar {
+            padding: 10px 28px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .stat-chip {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-weight: 600;
+        }
+
+        .stat-chip.err { border-color: var(--err); color: var(--err); background: #fff5f5; }
+        .stat-chip.ok  { border-color: var(--ok);  color: var(--ok);  background: #f0fff4; }
+
+        /* ── CUERPO ── */
+        .body-wrap {
+            padding: 20px 28px 40px;
+        }
+
+        .op-block { margin-bottom: 36px; }
+
+        .op-title {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: white;
+            background: var(--primary);
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 4px;
+            margin-bottom: 14px;
+        }
+
+        /* ── TARJETA MUEBLE ── */
+        .mueble-container {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 16px 18px 18px;
+            margin-bottom: 14px;
+            border-left: 6px solid #cbd5e1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .mueble-container.err {
+            border-left-color: var(--err);
+            background: #fff8f8;
+        }
+
+        .mueble-container.ok {
+            border-left-color: var(--ok);
+            background: #f8fffa;
+        }
+
+        .mueble-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .mueble-header-left { flex: 1; min-width: 0; }
+
+        .cod-mueble {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--primary);
+            word-break: break-all;
+        }
+
+        .desc-tag {
+            font-size: 0.78rem;
+            color: #c0392b;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .badge-op   { background: #dbeafe; color: #1d4ed8; }
+        .badge-tipo { background: #ede9fe; color: #5b21b6; }
+        .badge-err  { background: #fee2e2; color: #991b1b; }
+        .badge-ok   { background: #dcfce7; color: #166534; }
+
+        /* ── TABLA ── */
+        .table-wrap { overflow-x: auto; margin-top: 10px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        thead tr { background: #f1f5f9; }
+
+        th {
+            padding: 7px 10px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: left;
+            color: var(--text);
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #f8fafc; }
+
+        td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        .empty svg { margin-bottom: 16px; opacity: 0.3; }
+        .empty h3  { font-size: 1.1rem; margin-bottom: 6px; }
+        .empty p   { font-size: 0.85rem; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            .header { padding: 14px 16px; }
+            .controls { padding: 12px 16px; }
+            .body-wrap { padding: 14px 12px 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-left">
+        <h1>Validador de Despiece Maestro</h1>
+        <p>Madeval · Carga tu archivo Excel o CSV para analizar</p>
+    </div>
+    <label class="file-label" for="upload">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4"/></svg>
+        Cargar archivo
+    </label>
+    <input type="file" id="upload" accept=".xlsx,.csv">
+</div>
+
+<!-- CONTROLES -->
+<div class="controls">
+    <input type="text" class="f-input" id="f1" oninput="filtrarUniversal()" placeholder="🔍 Filtro 1  (cod, pieza, op…)">
+    <input type="text" class="f-input" id="f2" oninput="filtrarUniversal()" placeholder="🔍 Filtro 2">
+    <input type="text" class="f-input" id="f3" oninput="filtrarUniversal()" placeholder="🔍 Filtro 3">
+    <input type="text" class="f-input" id="f4" oninput="filtrarUniversal()" placeholder="🔍 Filtro 4">
+    <button class="btn-validar" onclick="validarTodo()">✔ VALIDAR ESTRUCTURA</button>
+    <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar" id="stats-bar" style="display:none">
+    <span>Mostrando <strong id="vis-count">0</strong> de <strong id="total-count">0</strong> muebles</span>
+    <span class="stat-chip ok" id="chip-ok" style="display:none"></span>
+    <span class="stat-chip err" id="chip-err" style="display:none"></span>
+</div>
+
+<!-- LISTA -->
+<div class="body-wrap">
+    <div id="lista">
+        <div class="empty">
+            <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+            </svg>
+            <h3>Sin datos cargados</h3>
+            <p>Sube un archivo Excel (.xlsx) o CSV para comenzar.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── NOMENCLATURA ──────────────────────────────────────────────────────────────
+const DB = {
+    'ML':'Maletera','CM':'Comodín','3R':'3 Repisas','G3':'3 Gavetas','SI':'Sistema Invisible',
+    'LI-J':'Lado Izquierdo Jota','LD-J':'Lado Derecho Jota',
+    'B':'Módulo Bajo','A':'Módulo Alto','S':'Módulo Suspendido','X':'Módulo Auxiliar',
+    'E':'Módulo Esquinero','EB':'Esquinero Bajo','EA':'Esquinero Alto','EX':'Esquinero Auxiliar','ES':'Esquinero Suspendido',
+    'H1':'Altura H1 (190mm)','H2':'Altura H2 (380mm)','H3':'Altura H3 (570mm)',
+    'H4':'Altura Estándar H4 (760mm)','H886':'Altura Especial H886 (886mm)',
+    'H5':'Altura H5 (950mm)','H6':'Altura H6 (1140mm)','H7':'Altura H7 (1330mm)',
+    'HE':'Altura Auxiliar HE (1360mm)','H8':'Altura Auxiliar H8 (1550mm)',
+    'H9':'Altura Auxiliar H9 (1740mm)','H11':'Altura Estándar Auxiliar H11 (2120mm)','H12':'Altura Auxiliar H12 (2310mm)',
+    'I':'Apertura Izquierda','D':'Apertura Derecha',
+    'BANDEJAS':'Divisiones Verticales','F':'Fregadero','ACK':'Accesorio Kesseböhmer',
+    'OL':'Organizador de Limpieza','SFR':'Soporte Fregadero','AQUA':'Protector Aquanon',
+    'CAMP-MES':'Campana Mesón','RM':'Respaldo Removible','CMP-MES':'Campana Mesón',
+    'CMP-IND':'Campana Mesón Indurama','F-C/R':'Fregadero con respaldo',
+    'ACK-AB-PAR-1GI':'Accesorio Kesseböhmer Abatible Paralelo con 1 Gaveta Interna',
+    'ACF-U':'Accesorio FGV Fregadero U','ACF-B':'Accesorio FGV Fregadero Basurero Redondo 10L',
+    'L2':'Doble Frente','ACF-MC':'Accesorio Moving Corner','ACF-BL':'Accesorio Bandeja Lemans',
+    'ACV-FLBX':'Accesorio Vibo Fly Box','HS':'Horno Simple',
+    'HS-REJILLA':'Horno Simple con Rejilla de Ventilación','MH':'Microondas','CP':'Calentador de Platos',
+    'ACV-BA':'Accesorio Vibo Basurero','ACH-CO':'Condimentero Hengel','ACF-CO':'Condimentero FGV',
+    'ACK-CO':'Condimentero Kesseböhmer','ACV-CO':'Condimentero Vibo',
+    'ACF-PP':'Accesorio Planchador Retráctil Plegable FGV','DE':'Despensa','D-D':'2 Despensas',
+    'ACV-JINO':'Accesorio Vibo Carrito Jino',
+    'FBAI':'Fregadero con Basurero Derecha y Puerta Apertura Izquierda',
+    'FBAD':'Fregadero con Basurero Izquierda y Puerta Apertura Derecha',
+    'TI':'Tiradera Interna','AI':'Asiento Iluminado (Base Vidrio + LED)',
+    'PTI60':'Puerta Combinada Izquierda 60cm','PTD60':'Puerta Combinada Derecha 60cm',
+    'RDE':'Repisero Despensa','BOT':'Botellas','AB-SIM':'Abatible Simple','AB-COM':'Abatible Compás',
+    'AB-GIR':'Abatible Giratorio','AB-PLE':'Abatible Plegable','ASM':'Alto Sobre Mesón',
+    'EE':'Extractor Embutido','PG':'Puerta Giratoria / Sistema Pocket EXL',
+    'REFRIG':'Módulo para Embutir Refrigerador','G2I':'2 Gavetas Internas',
+    'DEC':'Acabado Interno Decorativo','STC':'Estructura Corta',
+    'CT':'Detalle Decorativo Estilo Shaker 2.0','AU':'Detalle Decorativo Estilo Aurora',
+    'DESY':'Desayunador','PATAE6-AU':'Pata Decorativa Estilo Aurora',
+    'CIL-CT':'Cenefa de Iluminación','PEL-CT':'Perfil Superior Tipo Puerta',
+    'PEL':'Perfil para Tablero Iluminación Aurora','CRAUH8.6':'Cornisa con Detalle Aurora',
+    'E6':'Engrosado 6cm','1PA':'1 Pata Engrosada a 6cm','2PA':'2 Patas Engrosadas a 6cm',
+    'LA':'Lateral Alto','OTPE6-AU':'Oreja de Ajuste con Detalle Decorativo Aurora',
+    'CANTO':'Oreja de Canto Aurora','QU':'Cuatro','LIN':'Line','LINE':'Line',
+    'LIN-L-S':'Tipo L Line','LIN-U-S':'Tipo U Line','END':'Enderezador',
+    'MET':'Estructura Metálica','E1':'1 Compartimento','E2S':'2 Compartimentos',
+    'C/R':'Con Respaldo','S/R':'Sin Respaldo','TPM':'Tapa Premesón',
+    'LID':'Lateral Izquierdo Decorativo','LDD':'Lateral Derecho Decorativo',
+    'LSP':'Luz LED Spot','LBA':'Luz LED Base','2PULS':'2 Pulsadores Luz LED','LSU':'Luz LED Superior',
+    'BAXD':'Base Decorativo/Crudo','TEXD':'Techo Decorativo/Crudo','PUSH':'Puerta Push',
+    'ON':'Tip-On Gavetas','TOMCOR':'Tomacorriente de Cajón','S/SL':'Subdivisión 45 SL',
+    'LLT':'Luz LED Lateral Doble','LTI':'Luz LED Lateral Izquierda','LTD':'Luz LED Lateral Derecha',
+    'RV-EC':'Repisa Vidrio Extra Claro','RV-BN':'Repisa Vidrio Bronce Natural','LTC':'Luz LED Tubo',
+    'RMV':'Repisa de Madera con Vidrio e Iluminación LED',
+    '1/2PGVD':'Perfil Gola Vertical Derecho','1/2PGVI':'Perfil Gola Vertical Izquierdo',
+    'PGVD':'Perfil Gola Vertical Doble','PFI':'Perforación Izquierda','PFD':'Perforación Derecha',
+    'PFC':'Perforación Central','CF':'Freno Cajón FGV','LF':'Luz LED Full',
+    'LB':'Lateral Bajo','TR':'Tipo Recto','LBTR':'Lateral Bajo Tipo Recto','RI-MIX':'Riel Mixta',
+    'NIV':'Nivelador','LB2L':'Lateral Bajo 2 Lados Decorativos','L-S':'Lateral Tipo L Simple',
+    'U-S':'Lateral Tipo U Simple','LATR':'Lateral Alto Tipo Recto','LX':'Lateral Auxiliar',
+    'LXTR':'Lateral Auxiliar Tipo Recto','E8':'Lateral Engrosado de 8cm',
+    'LVAENV':'Lateral Visto Alto Envolvente','TAPA':'Tapa',
+    'INF':'Envolvente Inferior de Mueble Alto','SUP':'Envolvente Superior de Mueble Alto',
+    'E3':'Engrosado 3cm','FBTA':'Forramiento Bajo Tipo Armazón','FATA':'Forramiento Alto Tipo Armazón',
+    'FXTA':'Forramiento Auxiliar Tipo Armazón','FBTR':'Forramiento Bajo Tipo Recto',
+    'FXTR':'Forramiento Auxiliar Tipo Recto','ST':'Estructura de Isla','REP':'Repisa','TAP':'Repisa Interior',
+    'PM':'Premesón Tablero Crudo','MES':'Mesón','DIAM':'Desayunador Diamante',
+    'SOP80':'Soporte sobre Mesón para Estructura Desayunador',
+    'CU':'Cobre Texturizado','GF':'Grafito Texturizado','NE':'Negro Texturizado',
+    'DO':'Dorado Texturizado','CG':'Cacao Gold Mate','LU':'Luna Semi Brillante',
+    'R':'Repisero','DACE-PPUSH':'2 Puertas Plegables Lado Derecho',
+    'IACE-PPUSH':'2 Puertas Plegables Lado Izquierdo','ACE-PPUSH':'4 Puertas Plegables',
+    'ACH-DS':'Accesorio Hengel Despensa Simple','ACV-DS':'Accesorio Vibo Despensa Simple',
+    'ACH-DD':'Accesorio Hengel Despensa Doble','ACF-DD':'Accesorio FGV Despensa Doble',
+    'ACF-DX':'Accesorio FGV Despensa Extraíble','DM':'Despensa Múltiple','ACP':'Accesorio Peka',
+    'ACP-LIM':'Accesorio de Limpieza Peka','BP':'Bandeja Libell','VIN-HOR':'Vinera Horizontal',
+    'V-D-D-D':'Vacío - Despensa - Despensa - Despensa','DEF':'Despensa Fraccionada','REX':'Repisa Extraíble',
+    'HC':'Horno Combinado (Microondas + Horno)','HT':'Horno Triple (Espacio Calienta Platos)',
+    'TEK':'Módulo Adaptado a Electrodoméstico Teka','REJILLA':'Rejilla de Ventilación',
+    'ACJ':'Accesorio Jennair Incluido','ACS':'Accesorio Sirius Incluido',
+    'CP/J':'Accesorio Jennair No Incluido','CP/S':'Accesorio Sirius No Incluido',
+    'RF':'Alto sobre Refrigerador / Complemento Refrigerador',
+    'ACF-EP':'Accesorio FGV Escurre Platos','ACL-TV':'Accesorio Hafele Elevador TV',
+    'ACR-PE-SG':'Accesorio Persiana Aluminio Sobre Mesón',
+    'ACR-PE-SM':'Accesorio Persiana Aluminio Sobre Módulo',
+    'ACK-ELEV':'Accesorio Elevador Kesseböhmer',
+    'EX':'Extractor Visto','ACF-MC':'Accesorio Moving Corner',
+    'PM':'Premesón Tablero Crudo','STC':'Estructura Corta',
+    'FBAI':'Fregadero con Basurero Derecha y Puerta Apertura Izquierda',
+    'FBAD':'Fregadero con Basurero Izquierda y Puerta Apertura Derecha',
+};
+
+function obtenerNombre(cod) {
+    if (!cod) return "Código no definido";
+    let c = String(cod).toUpperCase().trim();
+    if (DB[c]) return DB[c];
+    // intento por partes separadas por guión
+    const partes = c.split('-');
+    return partes.map(p => DB[p] || p).join(' + ');
+}
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────────────────────
+let DATA_GLOBAL = [];          // array de filas crudas
+let MAPA_COLUMNAS = {};        // nombre lógico → nombre real en Excel
+const COLS_DESEADAS = ['op','Tipo','cod_mueble','cod_pieza','cant_piezas','medida1','medida2','l1','l2','c1','c2','nomueble'];
+const COLS_NUMERICAS = new Set(['cant_piezas','medida1','medida2','l1','l2','c1','c2']);
+
+// ── CARGA ─────────────────────────────────────────────────────────────────────
+document.getElementById('upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        DATA_GLOBAL = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: '' });
+        if (DATA_GLOBAL.length === 0) {
+            document.getElementById('lista').innerHTML = '<div class="empty"><h3>Archivo vacío</h3><p>No se encontraron filas con datos.</p></div>';
+            return;
+        }
+        mapearColumnas(Object.keys(DATA_GLOBAL[0]));
+        renderizar(DATA_GLOBAL);
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+function mapearColumnas(headers) {
+    MAPA_COLUMNAS = {};
+    COLS_DESEADAS.forEach(col => {
+        // busca exacto primero, luego case-insensitive
+        const exacto = headers.find(h => h === col);
+        MAPA_COLUMNAS[col] = exacto || headers.find(h => h.toLowerCase() === col.toLowerCase()) || null;
+    });
+}
+
+function val(row, col) {
+    const k = MAPA_COLUMNAS[col];
+    if (!k) return '';
+    const v = row[k];
+    return v !== undefined && v !== null ? String(v) : '';
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderizar(data) {
+    const lista = document.getElementById('lista');
+    lista.innerHTML = '';
+
+    if (data.length === 0) {
+        lista.innerHTML = '<div class="empty"><h3>Sin resultados</h3><p>No hay muebles que coincidan con los filtros.</p></div>';
+        actualizarStats(0, 0);
+        return;
+    }
+
+    // Agrupar por OP
+    const porOP = {};
+    data.forEach(row => {
+        const op = val(row, 'op') || 'Sin OP';
+        if (!porOP[op]) porOP[op] = {};
+        const cod = val(row, 'cod_mueble') || '—';
+        if (!porOP[op][cod]) porOP[op][cod] = [];
+        porOP[op][cod].push(row);
+    });
+
+    let totalMuebles = 0;
+    let html = '';
+
+    Object.keys(porOP).sort().forEach(op => {
+        html += `<div class="op-block">`;
+        html += `<div class="op-title">OP: ${op}</div>`;
+
+        Object.keys(porOP[op]).forEach(cod => {
+            const items = porOP[op][cod];
+            const nombre = obtenerNombre(cod);
+
+            // Detectar ancho desde el código (número × 10)
+            const matchAncho = cod.toString().match(/(?:[A-Z]+)(\d+)/);
+            const anchoCalculado = matchAncho ? parseInt(matchAncho[1]) * 10 : 0;
+
+            // Texto para búsqueda universal: todo el contenido de las filas + cod + op
+            const textoUniversal = (op + ' ' + cod + ' ' + nombre + ' ' + JSON.stringify(items)).toUpperCase();
+
+            // Tipo melamínico / laca: tomar de la primera fila con valor
+            const tipoVal = items.map(r => val(r, 'Tipo')).find(t => t.trim() !== '') || '';
+
+            totalMuebles++;
+
+            html += `
+            <div class="mueble-container"
+                 data-ancho="${anchoCalculado}"
+                 data-universal="${textoUniversal.replace(/"/g,'&quot;')}"
+                 data-codpuro="${cod}"
+                 data-tipo="${tipoVal.toUpperCase()}"
+                 data-op="${op}">
+
+                <div class="mueble-header">
+                    <div class="mueble-header-left">
+                        <div class="cod-mueble">${cod}</div>
+                        <div class="desc-tag">${nombre}</div>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-op">OP: ${op}</span>
+                        ${tipoVal ? `<span class="badge badge-tipo">${tipoVal}</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            ${COLS_DESEADAS.filter(c => c !== 'op').map(c => `<th>${c}</th>`).join('')}
+                        </tr></thead>
+                        <tbody>
+                            ${items.map(r => `<tr>
+                                ${COLS_DESEADAS.filter(c => c !== 'op').map(c => {
+                                    const v = val(r, c);
+                                    const cls = COLS_NUMERICAS.has(c) ? ' class="num"' : '';
+                                    return `<td${cls}>${v}</td>`;
+                                }).join('')}
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+    });
+
+    lista.innerHTML = html;
+    document.getElementById('stats-bar').style.display = 'flex';
+    actualizarStats(totalMuebles, totalMuebles);
+}
+
+// ── FILTRO UNIVERSAL (4 filtros AND) ─────────────────────────────────────────
+function filtrarUniversal() {
+    const filtros = ['f1','f2','f3','f4']
+        .map(id => document.getElementById(id).value.toUpperCase().trim())
+        .filter(v => v !== '');
+
+    let visibles = 0;
+    let total = 0;
+    const contenedores = document.querySelectorAll('.mueble-container');
+    total = contenedores.length;
+
+    contenedores.forEach(div => {
+        const texto = div.dataset.universal || '';
+        const mostrar = filtros.every(f => texto.includes(f));
+        div.style.display = mostrar ? '' : 'none';
+        if (mostrar) visibles++;
+    });
+
+    // Mostrar/ocultar bloques de OP vacíos
+    document.querySelectorAll('.op-block').forEach(block => {
+        const hay = [...block.querySelectorAll('.mueble-container')].some(d => d.style.display !== 'none');
+        block.style.display = hay ? '' : 'none';
+    });
+
+    actualizarStats(visibles, total);
+}
+
+function limpiarFiltros() {
+    ['f1','f2','f3','f4'].forEach(id => document.getElementById(id).value = '');
+    filtrarUniversal();
+}
+
+function actualizarStats(visibles, total) {
+    document.getElementById('vis-count').textContent = visibles;
+    document.getElementById('total-count').textContent = total;
+}
+
+// ── VALIDACIÓN DE ESTRUCTURA ──────────────────────────────────────────────────
+function validarTodo() {
+    const DESCUENTO = 37; // 18mm × 2 laterales + 1mm fuga
+
+    let countOk = 0, countErr = 0;
+
+    document.querySelectorAll('.mueble-container').forEach(div => {
+        div.classList.remove('err', 'ok');
+        let error = false;
+
+        const cod     = (div.dataset.codpuro || '').toUpperCase();
+        const tipo    = cod.charAt(0);
+        const ancho   = parseInt(div.dataset.ancho) || 0;
+        const profEsperada = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
+
+        const filas = div.querySelectorAll('tbody tr');
+
+        filas.forEach(tr => {
+            const celdas = tr.querySelectorAll('td');
+            if (celdas.length < 5) return;
+
+            // COLS_DESEADAS sin 'op': Tipo cod_mueble cod_pieza cant_piezas medida1 medida2 l1 l2 c1 c2 nomueble
+            // índices:                 0       1          2          3        4       5      6  7  8  9    10
+            const pieza = (celdas[2]?.innerText || '').toUpperCase();
+            const m1    = parseInt(celdas[4]?.innerText) || 0;
+            const m2    = parseInt(celdas[5]?.innerText) || 0;
+
+            // Validar ancho de base/techo
+            if (pieza.includes('BASE') || pieza.includes('TECHO') || pieza.startsWith('AJ_')) {
+                if (ancho > 0) {
+                    const esperado = ancho - DESCUENTO;
+                    if (Math.abs(m1 - esperado) > 2 && Math.abs(m2 - esperado) > 2) {
+                        error = true;
+                    }
+                }
+            }
+
+            // Validar profundidad de piezas estructurales
+            if (pieza.startsWith('AJ_') || pieza.includes('BAS') || pieza.includes('TEC') || pieza.startsWith('LAT')) {
+                if (m1 !== profEsperada && m2 !== profEsperada) {
+                    error = true;
+                }
+            }
+        });
+
+        div.classList.add(error ? 'err' : 'ok');
+        error ? countErr++ : countOk++;
+
+        // Actualizar badge de estado en la tarjeta
+        const existingBadge = div.querySelector('.badge-status');
+        if (existingBadge) existingBadge.remove();
+        const badgesEl = div.querySelector('.badges');
+        const badge = document.createElement('span');
+        badge.className = `badge ${error ? 'badge-err' : 'badge-ok'} badge-status`;
+        badge.textContent = error ? '✗ Error' : '✓ OK';
+        badgesEl.appendChild(badge);
+    });
+
+    const chipOk  = document.getElementById('chip-ok');
+    const chipErr = document.getElementById('chip-err');
+    chipOk.textContent  = `✓ ${countOk} OK`;
+    chipErr.textContent = `✗ ${countErr} con errores`;
+    chipOk.style.display  = countOk  > 0 ? '' : 'none';
+    chipErr.style.display = countErr > 0 ? '' : 'none';
+}
+</script>
+</body>
+</html>
