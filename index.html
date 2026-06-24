@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Define la codificacion correcta para mostrar tildes y caracteres en espanol. -->
+    <meta charset="UTF-8">
+    <!-- Permite que la pagina se adapte correctamente a celulares y tablets. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Titulo que aparece en la pestana del navegador. -->
+    <title>Validador de Despiece - Madeval</title>
+    <!-- Libreria para leer archivos Excel .xlsx desde el navegador. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        /* Variables generales de color para mantener el diseno consistente. */
+        :root {
+            --primary: #1a2535;
+            --accent: #2477a8;
+            --accent-dark: #165b82;
+            --success: #168253;
+            --success-soft: #eefaf3;
+            --danger: #c0392b;
+            --danger-soft: #fff3f1;
+            --warning: #b7791f;
+            --warning-soft: #fff8e6;
+            --bg: #eef1f5;
+            --card: #ffffff;
+            --border: #d7dee8;
+            --text: #243447;
+            --muted: #687789;
+            --table-head: #f4f7fb;
+            --shadow: 0 2px 8px rgba(18, 35, 53, 0.09);
+        }
+
+        /* Normaliza el calculo de tamanos y elimina margenes por defecto. */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Estilos base del cuerpo de la pagina. */
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* Barra superior fija con titulo y boton de carga. */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding: 16px 28px;
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Titulo principal del sistema. */
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 750;
+            letter-spacing: 0.2px;
+        }
+
+        /* Texto pequeno debajo del titulo. */
+        .header p {
+            margin-top: 3px;
+            color: #aec2d8;
+            font-size: 0.78rem;
+        }
+
+        /* Boton visual que abre el selector de archivo. */
+        .file-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 9px 16px;
+            border-radius: 7px;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-size: 0.86rem;
+            font-weight: 700;
+            transition: background 0.2s ease;
+        }
+
+        /* Color del boton al pasar el mouse. */
+        .file-label:hover {
+            background: var(--accent-dark);
+        }
+
+        /* Oculta el input real porque se usa el label como boton bonito. */
+        #upload {
+            display: none;
+        }
+
+        /* Franja de filtros y acciones. */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 14px 28px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Inputs de busqueda. */
+        .f-input {
+            flex: 1;
+            min-width: 145px;
+            height: 38px;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            background: #f9fbfd;
+            color: var(--text);
+            font-size: 0.86rem;
+            outline: none;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        /* Resalta el campo activo. */
+        .f-input:focus {
+            border-color: var(--accent);
+            background: white;
+        }
+
+        /* Estilo base para botones de accion. */
+        .btn {
+            min-height: 38px;
+            padding: 9px 15px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 0.84rem;
+            font-weight: 750;
+            white-space: nowrap;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Boton principal para validar. */
+        .btn-primary {
+            background: var(--success);
+            color: white;
+        }
+
+        /* Color hover del boton principal. */
+        .btn-primary:hover {
+            background: #0f6d45;
+        }
+
+        /* Boton secundario para limpiar filtros. */
+        .btn-secondary {
+            background: #f4f6f8;
+            color: #465365;
+            border-color: var(--border);
+        }
+
+        /* Color hover del boton secundario. */
+        .btn-secondary:hover {
+            background: #e8edf2;
+        }
+
+        /* Barra de contadores y avisos. */
+        .stats-bar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 11px 28px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        /* Etiquetas pequenas de resumen. */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 3px 10px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: white;
+            font-weight: 700;
+        }
+
+        /* Chip de muebles correctos. */
+        .chip.ok {
+            border-color: #99d6b5;
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        /* Chip de muebles con error. */
+        .chip.err {
+            border-color: #e6aaa3;
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        /* Chip de advertencias. */
+        .chip.warn {
+            border-color: #edd18b;
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+
+        /* Contenedor principal de resultados. */
+        .body-wrap {
+            padding: 18px 28px 42px;
+        }
+
+        /* Bloque agrupado por OP. */
+        .op-block {
+            margin-bottom: 34px;
+        }
+
+        /* Titulo de cada OP. */
+        .op-title {
+            display: inline-block;
+            margin-bottom: 12px;
+            padding: 5px 13px;
+            border-radius: 5px;
+            background: var(--primary);
+            color: white;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        /* Tarjeta de cada mueble. */
+        .mueble-container {
+            margin-bottom: 14px;
+            padding: 15px 16px 17px;
+            border-left: 6px solid #cbd5e1;
+            border-radius: 8px;
+            background: var(--card);
+            box-shadow: var(--shadow);
+        }
+
+        /* Estado correcto del mueble. */
+        .mueble-container.ok {
+            border-left-color: var(--success);
+            background: #fbfffd;
+        }
+
+        /* Estado con error del mueble. */
+        .mueble-container.err {
+            border-left-color: var(--danger);
+            background: #fffafa;
+        }
+
+        /* Encabezado interno de la tarjeta. */
+        .mueble-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        /* Columna izquierda del encabezado. */
+        .mueble-title {
+            min-width: 0;
+            flex: 1;
+        }
+
+        /* Codigo del mueble. */
+        .cod-mueble {
+            font-size: 1rem;
+            font-weight: 850;
+            color: var(--primary);
+            word-break: break-word;
+        }
+
+        /* Descripcion del codigo. */
+        .desc-tag {
+            margin-top: 3px;
+            color: #9d3429;
+            font-size: 0.78rem;
+            font-weight: 650;
+        }
+
+        /* Contenedor de etiquetas del mueble. */
+        .badges {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* Etiqueta generica. */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 22px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        /* Etiqueta de OP. */
+        .badge-op {
+            background: #e1efff;
+            color: #145a9f;
+        }
+
+        /* Etiqueta de tipo. */
+        .badge-tipo {
+            background: #eee9ff;
+            color: #5130a5;
+        }
+
+        /* Etiqueta OK. */
+        .badge-ok {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* Etiqueta error. */
+        .badge-err {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Caja de mensajes de validacion por mueble. */
+        .validation-list {
+            display: none;
+            margin: 10px 0 2px;
+            padding: 9px 11px;
+            border: 1px solid #f0b6ad;
+            border-radius: 7px;
+            background: var(--danger-soft);
+            color: #8a261d;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
+        /* Muestra la lista cuando existen errores. */
+        .validation-list.show {
+            display: block;
+        }
+
+        /* Permite desplazamiento horizontal en tablas grandes. */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 10px;
+            border: 1px solid #edf1f5;
+            border-radius: 7px;
+        }
+
+        /* Estilo base de la tabla. */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: white;
+        }
+
+        /* Fondo del encabezado de tabla. */
+        thead tr {
+            background: var(--table-head);
+        }
+
+        /* Celdas de encabezado. */
+        th {
+            padding: 7px 9px;
+            border-bottom: 2px solid var(--border);
+            color: var(--muted);
+            text-align: left;
+            font-size: 10px;
+            font-weight: 850;
+            letter-spacing: 0.45px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* Celdas de datos. */
+        td {
+            padding: 6px 9px;
+            border-bottom: 1px solid #eef2f6;
+            color: var(--text);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        /* Elimina borde final de la ultima fila. */
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Resalta fila al pasar el mouse. */
+        tbody tr:hover {
+            background: #f9fbfd;
+        }
+
+        /* Alinea numeros a la derecha. */
+        td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Marca visual de fila con error. */
+        tr.row-error td {
+            background: #fff1ef;
+            color: #7f1d1d;
+        }
+
+        /* Mensaje inicial o sin resultados. */
+        .empty {
+            padding: 58px 18px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        /* Icono del mensaje vacio. */
+        .empty svg {
+            margin-bottom: 14px;
+            opacity: 0.34;
+        }
+
+        /* Titulo de mensaje vacio. */
+        .empty h3 {
+            margin-bottom: 6px;
+            color: #415061;
+            font-size: 1.06rem;
+        }
+
+        /* Parrafo de mensaje vacio. */
+        .empty p {
+            font-size: 0.86rem;
+        }
+
+        /* Caja para errores generales, por ejemplo columnas faltantes. */
+        .notice {
+            margin-bottom: 14px;
+            padding: 11px 13px;
+            border: 1px solid #edd18b;
+            border-radius: 7px;
+            background: var(--warning-soft);
+            color: #80540e;
+            font-size: 0.83rem;
+            line-height: 1.45;
+        }
+
+        /* Ajustes para pantallas pequenas. */
+        @media (max-width: 680px) {
+            .header,
+            .controls,
+            .stats-bar {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .body-wrap {
+                padding: 14px 12px 36px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Encabezado con nombre del sistema y carga de archivo. -->
+    <header class="header">
+        <!-- Contenedor del texto principal. -->
+        <div>
+            <!-- Nombre visible de la herramienta. -->
+            <h1>Validador de Despiece</h1>
+            <!-- Instruccion corta para el usuario. -->
+            <p>Madeval - carga un archivo Excel o CSV para analizar piezas por OP y mueble.</p>
+        </div>
+
+        <!-- Label que funciona como boton para abrir el input de archivo. -->
+        <label class="file-label" for="upload" title="Cargar archivo Excel o CSV">
+            <!-- Icono sencillo de carga. -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
+                <path d="M12 12V4"></path>
+                <path d="m8 8 4-4 4 4"></path>
+            </svg>
+            <!-- Texto del boton. -->
+            Cargar archivo
+        </label>
+
+        <!-- Input real para seleccionar archivo; esta oculto por CSS. -->
+        <input type="file" id="upload" accept=".xlsx,.xls,.csv">
+    </header>
+
+    <!-- Filtros y botones principales. -->
+    <section class="controls" aria-label="Filtros y acciones">
+        <!-- Filtro universal 1. -->
+        <input type="text" class="f-input" id="f1" placeholder="Filtro 1: codigo, pieza, OP..." autocomplete="off">
+        <!-- Filtro universal 2. -->
+        <input type="text" class="f-input" id="f2" placeholder="Filtro 2" autocomplete="off">
+        <!-- Filtro universal 3. -->
+        <input type="text" class="f-input" id="f3" placeholder="Filtro 3" autocomplete="off">
+        <!-- Filtro universal 4. -->
+        <input type="text" class="f-input" id="f4" placeholder="Filtro 4" autocomplete="off">
+        <!-- Boton que ejecuta la validacion dimensional. -->
+        <button type="button" class="btn btn-primary" id="btn-validar">Validar estructura</button>
+        <!-- Boton que borra los filtros activos. -->
+        <button type="button" class="btn btn-secondary" id="btn-limpiar">Limpiar</button>
+    </section>
+
+    <!-- Contadores de resultado y estado. -->
+    <section class="stats-bar" id="stats-bar" aria-live="polite">
+        <!-- Cantidad visible contra cantidad total. -->
+        <span>Mostrando <strong id="vis-count">0</strong> de <strong id="total-count">0</strong> muebles</span>
+        <!-- Cantidad de muebles correctos. -->
+        <span class="chip ok" id="chip-ok" style="display:none"></span>
+        <!-- Cantidad de muebles con errores. -->
+        <span class="chip err" id="chip-err" style="display:none"></span>
+        <!-- Advertencia sobre columnas o lectura. -->
+        <span class="chip warn" id="chip-warn" style="display:none"></span>
+    </section>
+
+    <!-- Zona principal donde se renderizan los muebles. -->
+    <main class="body-wrap">
+        <!-- Contenedor de avisos generales. -->
+        <div id="avisos"></div>
+        <!-- Contenedor de la lista de OP y muebles. -->
+        <div id="lista">
+            <!-- Estado inicial antes de cargar datos. -->
+            <div class="empty">
+                <!-- Icono de tabla vacia. -->
+                <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <path d="M3 9h18M9 21V9"></path>
+                </svg>
+                <!-- Titulo del estado vacio. -->
+                <h3>Sin datos cargados</h3>
+                <!-- Mensaje de ayuda inicial. -->
+                <p>Sube un archivo Excel (.xlsx/.xls) o CSV para comenzar.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Diccionario que traduce codigos de muebles, accesorios y acabados a nombres legibles.
+        const DB = {
+            ML: "Maletera",
+            CM: "Comodin",
+            "3R": "3 Repisas",
+            G3: "3 Gavetas",
+            SI: "Sistema Invisible",
+            "LI-J": "Lado Izquierdo Jota",
+            "LD-J": "Lado Derecho Jota",
+            "LI-I": "Lado Izquierdo I",
+            "LD-I": "Lado Derecho I",
+            B: "Modulo Bajo",
+            A: "Modulo Alto",
+            S: "Modulo Suspendido",
+            X: "Modulo Auxiliar",
+            E: "Modulo Esquinero",
+            EB: "Esquinero Bajo",
+            EA: "Esquinero Alto",
+            EX: "Extractor Visto",
+            ES: "Esquinero Suspendido",
+            H1: "Altura H1 (190mm)",
+            H2: "Altura H2 (380mm)",
+            H3: "Altura H3 (570mm)",
+            H4: "Altura Estandar H4 (760mm)",
+            H886: "Altura Especial H886 (886mm)",
+            H5: "Altura H5 (950mm)",
+            H6: "Altura H6 (1140mm)",
+            H7: "Altura H7 (1330mm)",
+            HE: "Altura Auxiliar HE (1360mm)",
+            H8: "Altura Auxiliar H8 (1550mm)",
+            H9: "Altura Auxiliar H9 (1740mm)",
+            H11: "Altura Estandar Auxiliar H11 (2120mm)",
+            H12: "Altura Auxiliar H12 (2310mm)",
+            I: "Apertura Izquierda",
+            D: "Apertura Derecha",
+            BANDEJAS: "Divisiones Verticales",
+            F: "Fregadero",
+            ACK: "Accesorio Kessebohmer",
+            OL: "Organizador de Limpieza",
+            SFR: "Soporte Fregadero",
+            AQUA: "Protector Aquanon",
+            "CAMP-MES": "Campana Meson",
+            RM: "Respaldo Removible",
+            "CMP-MES": "Campana Meson",
+            "CMP-IND": "Campana Meson Indurama",
+            "F-C/R": "Fregadero con respaldo",
+            "ACK-AB-PAR-1GI": "Accesorio Kessebohmer Abatible Paralelo con 1 Gaveta Interna",
+            "ACF-U": "Accesorio FGV Fregadero U",
+            "ACF-B": "Accesorio FGV Fregadero Basurero Redondo 10L",
+            L2: "Doble Frente",
+            "ACF-MC": "Accesorio Moving Corner",
+            "ACF-BL": "Accesorio Bandeja Lemans",
+            "ACV-FLBX": "Accesorio Vibo Fly Box",
+            HS: "Horno Simple",
+            "HS-REJILLA": "Horno Simple con Rejilla de Ventilacion",
+            MH: "Microondas",
+            CP: "Calentador de Platos",
+            "ACV-BA": "Accesorio Vibo Basurero",
+            "ACH-CO": "Condimentero Hengel",
+            "ACF-CO": "Condimentero FGV",
+            "ACK-CO": "Condimentero Kessebohmer",
+            "ACV-CO": "Condimentero Vibo",
+            "ACF-PP": "Accesorio Planchador Retractil Plegable FGV",
+            DE: "Despensa",
+            "D-D": "2 Despensas",
+            "ACV-JINO": "Accesorio Vibo Carrito Jino",
+            FBAI: "Fregadero con Basurero Derecha y Puerta Apertura Izquierda",
+            FBAD: "Fregadero con Basurero Izquierda y Puerta Apertura Derecha",
+            TI: "Tiradera Interna",
+            AI: "Asiento Iluminado (Base Vidrio + LED)",
+            PTI60: "Puerta Combinada Izquierda 60cm",
+            PTD60: "Puerta Combinada Derecha 60cm",
+            RDE: "Repisero Despensa",
+            BOT: "Botellas",
+            "AB-SIM": "Abatible Simple",
+            "AB-COM": "Abatible Compas",
+            "AB-GIR": "Abatible Giratorio",
+            "AB-PLE": "Abatible Plegable",
+            ASM: "Alto Sobre Meson",
+            EE: "Extractor Embutido",
+            PG: "Puerta Giratoria / Sistema Pocket EXL",
+            REFRIG: "Modulo para Embutir Refrigerador",
+            G2I: "2 Gavetas Internas",
+            DEC: "Acabado Interno Decorativo",
+            STC: "Estructura Corta",
+            CT: "Detalle Decorativo Estilo Shaker 2.0",
+            AU: "Detalle Decorativo Estilo Aurora",
+            DESY: "Desayunador",
+            "PATAE6-AU": "Pata Decorativa Estilo Aurora",
+            "CIL-CT": "Cenefa de Iluminacion",
+            "PEL-CT": "Perfil Superior Tipo Puerta",
+            PEL: "Perfil para Tablero Iluminacion Aurora",
+            "CRAUH8.6": "Cornisa con Detalle Aurora",
+            E6: "Engrosado 6cm",
+            "1PA": "1 Pata Engrosada a 6cm",
+            "2PA": "2 Patas Engrosadas a 6cm",
+            LA: "Lateral Alto",
+            "OTPE6-AU": "Oreja de Ajuste con Detalle Decorativo Aurora",
+            CANTO: "Oreja de Canto Aurora",
+            QU: "Cuatro",
+            LIN: "Line",
+            LINE: "Line",
+            "LIN-L-S": "Tipo L Line",
+            "LIN-U-S": "Tipo U Line",
+            END: "Enderezador",
+            MET: "Estructura Metalica",
+            E1: "1 Compartimento",
+            E2S: "2 Compartimentos",
+            "C/R": "Con Respaldo",
+            "S/R": "Sin Respaldo",
+            TPM: "Tapa Premeson",
+            LID: "Lateral Izquierdo Decorativo",
+            LDD: "Lateral Derecho Decorativo",
+            LSP: "Luz LED Spot",
+            LBA: "Luz LED Base",
+            "2PULS": "2 Pulsadores Luz LED",
+            LSU: "Luz LED Superior",
+            BAXD: "Base Decorativo/Crudo",
+            TEXD: "Techo Decorativo/Crudo",
+            PUSH: "Puerta Push",
+            ON: "Tip-On Gavetas",
+            TOMCOR: "Tomacorriente de Cajon",
+            "S/SL": "Subdivision 45 SL",
+            LLT: "Luz LED Lateral Doble",
+            LTI: "Luz LED Lateral Izquierda",
+            LTD: "Luz LED Lateral Derecha",
+            "RV-EC": "Repisa Vidrio Extra Claro",
+            "RV-BN": "Repisa Vidrio Bronce Natural",
+            LTC: "Luz LED Tubo",
+            RMV: "Repisa de Madera con Vidrio e Iluminacion LED",
+            "1/2PGVD": "Perfil Gola Vertical Derecho",
+            "1/2PGVI": "Perfil Gola Vertical Izquierdo",
+            PGVD: "Perfil Gola Vertical Doble",
+            PFI: "Perforacion Izquierda",
+            PFD: "Perforacion Derecha",
+            PFC: "Perforacion Central",
+            CF: "Freno Cajon FGV",
+            LF: "Luz LED Full",
+            LB: "Lateral Bajo",
+            TR: "Tipo Recto",
+            LBTR: "Lateral Bajo Tipo Recto",
+            "RI-MIX": "Riel Mixta",
+            NIV: "Nivelador",
+            LB2L: "Lateral Bajo 2 Lados Decorativos",
+            "L-S": "Lateral Tipo L Simple",
+            "U-S": "Lateral Tipo U Simple",
+            LATR: "Lateral Alto Tipo Recto",
+            LX: "Lateral Auxiliar",
+            LXTR: "Lateral Auxiliar Tipo Recto",
+            E8: "Lateral Engrosado de 8cm",
+            LVAENV: "Lateral Visto Alto Envolvente",
+            TAPA: "Tapa",
+            INF: "Envolvente Inferior de Mueble Alto",
+            SUP: "Envolvente Superior de Mueble Alto",
+            E3: "Engrosado 3cm",
+            FBTA: "Forramiento Bajo Tipo Armazon",
+            FATA: "Forramiento Alto Tipo Armazon",
+            FXTA: "Forramiento Auxiliar Tipo Armazon",
+            FBTR: "Forramiento Bajo Tipo Recto",
+            FXTR: "Forramiento Auxiliar Tipo Recto",
+            ST: "Estructura de Isla",
+            REP: "Repisa",
+            TAP: "Repisa Interior",
+            PM: "Premeson Tablero Crudo",
+            MES: "Meson",
+            DIAM: "Desayunador Diamante",
+            SOP80: "Soporte sobre Meson para Estructura Desayunador",
+            CU: "Cobre Texturizado",
+            GF: "Grafito Texturizado",
+            NE: "Negro Texturizado",
+            DO: "Dorado Texturizado",
+            CG: "Cacao Gold Mate",
+            LU: "Luna Semi Brillante",
+            R: "Repisero",
+            "DACE-PPUSH": "2 Puertas Plegables Lado Derecho",
+            "IACE-PPUSH": "2 Puertas Plegables Lado Izquierdo",
+            "ACE-PPUSH": "4 Puertas Plegables",
+            "ACH-DS": "Accesorio Hengel Despensa Simple",
+            "ACV-DS": "Accesorio Vibo Despensa Simple",
+            "ACH-DD": "Accesorio Hengel Despensa Doble",
+            "ACF-DD": "Accesorio FGV Despensa Doble",
+            "ACF-DX": "Accesorio FGV Despensa Extraible",
+            DM: "Despensa Multiple",
+            ACP: "Accesorio Peka",
+            "ACP-LIM": "Accesorio de Limpieza Peka",
+            BP: "Bandeja Libell",
+            "VIN-HOR": "Vinera Horizontal",
+            "V-D-D-D": "Vacio - Despensa - Despensa - Despensa",
+            DEF: "Despensa Fraccionada",
+            REX: "Repisa Extraible",
+            HC: "Horno Combinado (Microondas + Horno)",
+            HT: "Horno Triple (Espacio Calienta Platos)",
+            TEK: "Modulo Adaptado a Electrodomestico Teka",
+            REJILLA: "Rejilla de Ventilacion",
+            ACJ: "Accesorio Jennair Incluido",
+            ACS: "Accesorio Sirius Incluido",
+            "CP/J": "Accesorio Jennair No Incluido",
+            "CP/S": "Accesorio Sirius No Incluido",
+            RF: "Alto sobre Refrigerador / Complemento Refrigerador",
+            "ACF-EP": "Accesorio FGV Escurre Platos",
+            "ACL-TV": "Accesorio Hafele Elevador TV",
+            "ACR-PE-SG": "Accesorio Persiana Aluminio Sobre Meson",
+            "ACR-PE-SM": "Accesorio Persiana Aluminio Sobre Modulo",
+            "ACK-ELEV": "Accesorio Elevador Kessebohmer"
+        };
+
+        // Columnas que el sistema intenta leer del archivo.
+        const COLS_DESEADAS = ["op", "Tipo", "cod_mueble", "cod_pieza", "cant_piezas", "medida1", "medida2", "l1", "l2", "c1", "c2", "nomueble"];
+
+        // Columnas que se consideran numericas para alinearlas y validarlas.
+        const COLS_NUMERICAS = new Set(["cant_piezas", "medida1", "medida2", "l1", "l2", "c1", "c2"]);
+
+        // Columnas minimas para que la validacion tenga sentido.
+        const COLS_REQUERIDAS = ["op", "cod_mueble", "cod_pieza", "medida1", "medida2"];
+
+        // Margen permitido en milimetros al comparar medidas.
+        const TOLERANCIA_MM = 2;
+
+        // Descuento usado para ancho de base/techo: 18mm x 2 laterales + 1mm fuga.
+        const DESCUENTO_ANCHO = 37;
+
+        // Guarda todas las filas originales cargadas desde el archivo.
+        let DATA_GLOBAL = [];
+
+        // Relaciona el nombre esperado de columna con el nombre real encontrado en el archivo.
+        let MAPA_COLUMNAS = {};
+
+        // Guarda si ya se ejecuto la validacion para revalidar al cambiar filtros o archivo.
+        let VALIDADO = false;
+
+        // Referencias a elementos principales para no buscarlos repetidamente.
+        const uploadEl = document.getElementById("upload");
+        const listaEl = document.getElementById("lista");
+        const avisosEl = document.getElementById("avisos");
+        const statsEl = document.getElementById("stats-bar");
+        const chipOkEl = document.getElementById("chip-ok");
+        const chipErrEl = document.getElementById("chip-err");
+        const chipWarnEl = document.getElementById("chip-warn");
+
+        // Conecta el evento de carga de archivo con su funcion.
+        uploadEl.addEventListener("change", manejarArchivoSeleccionado);
+
+        // Conecta cada filtro con la funcion de filtrado.
+        ["f1", "f2", "f3", "f4"].forEach(id => {
+            document.getElementById(id).addEventListener("input", filtrarUniversal);
+        });
+
+        // Conecta el boton de validacion.
+        document.getElementById("btn-validar").addEventListener("click", validarTodo);
+
+        // Conecta el boton de limpieza.
+        document.getElementById("btn-limpiar").addEventListener("click", limpiarFiltros);
+
+        // Lee el archivo seleccionado por el usuario.
+        function manejarArchivoSeleccionado(event) {
+            // Toma el primer archivo seleccionado.
+            const file = event.target.files[0];
+
+            // Si no hay archivo, termina sin hacer nada.
+            if (!file) return;
+
+            // Reinicia el estado de validacion.
+            VALIDADO = false;
+
+            // Limpia avisos anteriores.
+            limpiarAvisos();
+
+            // Detecta si el archivo es CSV por extension.
+            const esCsv = file.name.toLowerCase().endsWith(".csv");
+
+            // Crea el lector local del navegador.
+            const reader = new FileReader();
+
+            // Define que hacer si ocurre un error leyendo el archivo.
+            reader.onerror = () => mostrarErrorGeneral("No se pudo leer el archivo seleccionado.");
+
+            // Define como procesar el archivo cuando termine de leer.
+            reader.onload = ev => {
+                try {
+                    // Convierte el archivo a filas segun su tipo.
+                    DATA_GLOBAL = esCsv ? leerCsv(ev.target.result) : leerExcel(ev.target.result);
+
+                    // Valida que el archivo tenga datos.
+                    if (DATA_GLOBAL.length === 0) {
+                        mostrarEstadoVacio("Archivo vacio", "No se encontraron filas con datos.");
+                        actualizarStats(0, 0);
+                        return;
+                    }
+
+                    // Detecta columnas reales del archivo.
+                    mapearColumnas(Object.keys(DATA_GLOBAL[0]));
+
+                    // Muestra avisos si faltan columnas importantes.
+                    mostrarAvisosDeColumnas();
+
+                    // Dibuja los datos en pantalla.
+                    renderizar(DATA_GLOBAL);
+                } catch (error) {
+                    // Muestra un mensaje claro si el archivo no se pudo interpretar.
+                    mostrarErrorGeneral("No se pudo procesar el archivo. Verifica que sea un Excel o CSV valido.");
+                    console.error(error);
+                }
+            };
+
+            // Lee CSV como texto para respetar separadores.
+            if (esCsv) {
+                reader.readAsText(file, "UTF-8");
+                return;
+            }
+
+            // Lee Excel como arreglo binario.
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Convierte un archivo Excel a objetos JSON.
+        function leerExcel(arrayBuffer) {
+            // Verifica que la libreria XLSX este disponible.
+            if (!window.XLSX) {
+                throw new Error("La libreria XLSX no esta cargada.");
+            }
+
+            // Lee el libro de Excel.
+            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+
+            // Toma el nombre de la primera hoja.
+            const firstSheetName = workbook.SheetNames[0];
+
+            // Obtiene la primera hoja del libro.
+            const sheet = workbook.Sheets[firstSheetName];
+
+            // Convierte la hoja a filas JSON, conservando celdas vacias como texto vacio.
+            return XLSX.utils.sheet_to_json(sheet, { raw: true, defval: "" });
+        }
+
+        // Convierte un CSV simple a objetos usando la primera fila como encabezados.
+        function leerCsv(texto) {
+            // Divide el CSV en filas respetando comillas.
+            const filas = parsearCsv(texto);
+
+            // Si no hay filas, devuelve lista vacia.
+            if (filas.length === 0) return [];
+
+            // Toma la primera fila como encabezado.
+            const headers = filas[0].map(h => String(h).trim());
+
+            // Convierte las demas filas a objetos.
+            return filas.slice(1)
+                .filter(fila => fila.some(valor => String(valor).trim() !== ""))
+                .map(fila => {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = fila[index] ?? "";
+                    });
+                    return obj;
+                });
+        }
+
+        // Parser CSV basico que soporta comas, punto y coma, saltos de linea y comillas.
+        function parsearCsv(texto) {
+            // Normaliza saltos de linea.
+            const limpio = String(texto || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+            // Detecta separador usando la primera linea.
+            const primeraLinea = limpio.split("\n")[0] || "";
+            const separador = (primeraLinea.match(/;/g) || []).length > (primeraLinea.match(/,/g) || []).length ? ";" : ",";
+
+            // Guarda todas las filas parseadas.
+            const filas = [];
+
+            // Guarda la fila actual.
+            let fila = [];
+
+            // Guarda el valor actual.
+            let valor = "";
+
+            // Indica si el cursor esta dentro de comillas.
+            let enComillas = false;
+
+            // Recorre caracter por caracter para respetar comillas.
+            for (let i = 0; i < limpio.length; i++) {
+                const char = limpio[i];
+                const next = limpio[i + 1];
+
+                if (char === '"' && enComillas && next === '"') {
+                    valor += '"';
+                    i++;
+                } else if (char === '"') {
+                    enComillas = !enComillas;
+                } else if (char === separador && !enComillas) {
+                    fila.push(valor);
+                    valor = "";
+                } else if (char === "\n" && !enComillas) {
+                    fila.push(valor);
+                    filas.push(fila);
+                    fila = [];
+                    valor = "";
+                } else {
+                    valor += char;
+                }
+            }
+
+            // Agrega el ultimo valor si existe contenido pendiente.
+            if (valor !== "" || fila.length > 0) {
+                fila.push(valor);
+                filas.push(fila);
+            }
+
+            // Devuelve filas sin lineas totalmente vacias.
+            return filas.filter(f => f.some(v => String(v).trim() !== ""));
+        }
+
+        // Relaciona columnas esperadas con columnas reales del archivo.
+        function mapearColumnas(headers) {
+            // Reinicia el mapa.
+            MAPA_COLUMNAS = {};
+
+            // Recorre cada columna esperada.
+            COLS_DESEADAS.forEach(col => {
+                // Busca coincidencia exacta.
+                const exacta = headers.find(h => h === col);
+
+                // Busca coincidencia ignorando mayusculas, espacios y guiones bajos.
+                const flexible = headers.find(h => normalizarHeader(h) === normalizarHeader(col));
+
+                // Guarda el mejor resultado encontrado.
+                MAPA_COLUMNAS[col] = exacta || flexible || null;
+            });
+        }
+
+        // Normaliza nombres de columnas para comparar con mas tolerancia.
+        function normalizarHeader(header) {
+            // Convierte a texto, minusculas y sin espacios sobrantes.
+            return String(header || "").toLowerCase().trim().replace(/\s+/g, "_");
+        }
+
+        // Obtiene un valor desde una fila usando el nombre logico de columna.
+        function val(row, col) {
+            // Busca el nombre real de la columna.
+            const key = MAPA_COLUMNAS[col];
+
+            // Si no existe esa columna, devuelve vacio.
+            if (!key) return "";
+
+            // Toma el valor real desde la fila.
+            const value = row[key];
+
+            // Convierte null o undefined a texto vacio.
+            return value !== undefined && value !== null ? String(value).trim() : "";
+        }
+
+        // Devuelve el nombre descriptivo de un codigo.
+        function obtenerNombre(cod) {
+            // Si no hay codigo, devuelve descripcion generica.
+            if (!cod) return "Codigo no definido";
+
+            // Normaliza el codigo.
+            const codigo = String(cod).toUpperCase().trim();
+
+            // Si existe completo en el diccionario, lo devuelve.
+            if (DB[codigo]) return DB[codigo];
+
+            // Divide por guiones para intentar traducir cada parte.
+            return codigo.split("-").map(parte => DB[parte] || parte).join(" + ");
+        }
+
+        // Renderiza todos los muebles agrupados por OP.
+        function renderizar(data) {
+            // Limpia la lista anterior.
+            listaEl.textContent = "";
+
+            // Si no hay resultados, muestra estado vacio.
+            if (data.length === 0) {
+                mostrarEstadoVacio("Sin resultados", "No hay muebles que coincidan con los filtros.");
+                actualizarStats(0, 0);
+                return;
+            }
+
+            // Agrupa las filas por OP y luego por codigo de mueble.
+            const porOP = agruparPorOpYMueble(data);
+
+            // Cuenta cuantos muebles se van creando.
+            let totalMuebles = 0;
+
+            // Crea un fragmento para insertar todo de una sola vez.
+            const fragment = document.createDocumentFragment();
+
+            // Recorre OP ordenadas alfabeticamente.
+            Object.keys(porOP).sort(compararNatural).forEach(op => {
+                // Crea el bloque visual de la OP.
+                const opBlock = crearElemento("section", "op-block");
+
+                // Crea el titulo de la OP.
+                const opTitle = crearElemento("div", "op-title", `OP: ${op}`);
+
+                // Agrega el titulo al bloque.
+                opBlock.appendChild(opTitle);
+
+                // Recorre los muebles dentro de la OP.
+                Object.keys(porOP[op]).sort(compararNatural).forEach(cod => {
+                    // Toma las piezas del mueble.
+                    const items = porOP[op][cod];
+
+                    // Crea la tarjeta visual.
+                    const tarjeta = crearTarjetaMueble(op, cod, items);
+
+                    // Agrega la tarjeta al bloque de OP.
+                    opBlock.appendChild(tarjeta);
+
+                    // Suma un mueble al total.
+                    totalMuebles++;
+                });
+
+                // Agrega el bloque al fragmento.
+                fragment.appendChild(opBlock);
+            });
+
+            // Inserta todo en pantalla.
+            listaEl.appendChild(fragment);
+
+            // Muestra barra de estadisticas.
+            statsEl.style.display = "flex";
+
+            // Actualiza contadores.
+            actualizarStats(totalMuebles, totalMuebles);
+
+            // Aplica filtros activos si existian.
+            filtrarUniversal();
+
+            // Si ya se habia validado, vuelve a validar la vista nueva.
+            if (VALIDADO) validarTodo();
+        }
+
+        // Agrupa filas por OP y codigo de mueble.
+        function agruparPorOpYMueble(data) {
+            // Objeto final de grupos.
+            const grupos = {};
+
+            // Recorre cada fila original.
+            data.forEach(row => {
+                // Obtiene OP o asigna valor por defecto.
+                const op = val(row, "op") || "Sin OP";
+
+                // Crea grupo de OP si no existe.
+                if (!grupos[op]) grupos[op] = {};
+
+                // Obtiene codigo de mueble o asigna valor por defecto.
+                const cod = val(row, "cod_mueble") || "Sin codigo";
+
+                // Crea grupo de mueble si no existe.
+                if (!grupos[op][cod]) grupos[op][cod] = [];
+
+                // Agrega la fila al grupo.
+                grupos[op][cod].push(row);
+            });
+
+            // Devuelve la estructura agrupada.
+            return grupos;
+        }
+
+        // Crea la tarjeta de un mueble con encabezado, tabla y zona de validacion.
+        function crearTarjetaMueble(op, cod, items) {
+            // Calcula descripcion del codigo.
+            const nombre = obtenerNombre(cod);
+
+            // Detecta ancho desde el codigo.
+            const anchoCalculado = detectarAncho(cod);
+
+            // Obtiene el primer tipo no vacio.
+            const tipoVal = items.map(r => val(r, "Tipo")).find(t => t.trim() !== "") || "";
+
+            // Genera texto universal para filtros.
+            const textoUniversal = construirTextoUniversal(op, cod, nombre, items);
+
+            // Crea contenedor principal del mueble.
+            const card = crearElemento("article", "mueble-container");
+
+            // Guarda datos seguros en dataset.
+            card.dataset.ancho = String(anchoCalculado);
+            card.dataset.codpuro = cod;
+            card.dataset.tipo = tipoVal.toUpperCase();
+            card.dataset.op = op;
+            card.dataset.universal = textoUniversal;
+
+            // Crea encabezado visual.
+            card.appendChild(crearEncabezadoMueble(op, cod, nombre, tipoVal));
+
+            // Crea contenedor para errores de validacion.
+            const validationList = crearElemento("div", "validation-list");
+            validationList.setAttribute("aria-live", "polite");
+            card.appendChild(validationList);
+
+            // Crea tabla de piezas.
+            card.appendChild(crearTabla(items));
+
+            // Devuelve tarjeta completa.
+            return card;
+        }
+
+        // Crea el encabezado de una tarjeta.
+        function crearEncabezadoMueble(op, cod, nombre, tipoVal) {
+            // Crea contenedor de encabezado.
+            const header = crearElemento("div", "mueble-header");
+
+            // Crea columna izquierda.
+            const titleWrap = crearElemento("div", "mueble-title");
+
+            // Crea codigo visible.
+            titleWrap.appendChild(crearElemento("div", "cod-mueble", cod));
+
+            // Crea descripcion visible.
+            titleWrap.appendChild(crearElemento("div", "desc-tag", nombre));
+
+            // Crea contenedor de badges.
+            const badges = crearElemento("div", "badges");
+
+            // Agrega badge de OP.
+            badges.appendChild(crearElemento("span", "badge badge-op", `OP: ${op}`));
+
+            // Agrega badge de tipo si existe.
+            if (tipoVal) badges.appendChild(crearElemento("span", "badge badge-tipo", tipoVal));
+
+            // Une titulo y badges.
+            header.appendChild(titleWrap);
+            header.appendChild(badges);
+
+            // Devuelve encabezado.
+            return header;
+        }
+
+        // Crea la tabla de piezas del mueble.
+        function crearTabla(items) {
+            // Crea contenedor con desplazamiento horizontal.
+            const wrap = crearElemento("div", "table-wrap");
+
+            // Crea tabla.
+            const table = document.createElement("table");
+
+            // Crea encabezado.
+            const thead = document.createElement("thead");
+
+            // Crea fila de encabezado.
+            const headRow = document.createElement("tr");
+
+            // Agrega columnas excepto OP, porque ya se muestra en el bloque.
+            COLS_DESEADAS.filter(c => c !== "op").forEach(col => {
+                const th = document.createElement("th");
+                th.textContent = col;
+                headRow.appendChild(th);
+            });
+
+            // Inserta fila al encabezado.
+            thead.appendChild(headRow);
+
+            // Crea cuerpo de tabla.
+            const tbody = document.createElement("tbody");
+
+            // Crea filas de datos.
+            items.forEach(row => {
+                const tr = document.createElement("tr");
+
+                COLS_DESEADAS.filter(c => c !== "op").forEach(col => {
+                    const td = document.createElement("td");
+                    td.textContent = val(row, col);
+                    td.dataset.col = col;
+                    if (COLS_NUMERICAS.has(col)) td.classList.add("num");
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            // Une partes de tabla.
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            wrap.appendChild(table);
+
+            // Devuelve tabla envuelta.
+            return wrap;
+        }
+
+        // Filtra todos los muebles usando los cuatro filtros como condiciones AND.
+        function filtrarUniversal() {
+            // Lee filtros activos en mayusculas.
+            const filtros = ["f1", "f2", "f3", "f4"]
+                .map(id => document.getElementById(id).value.toUpperCase().trim())
+                .filter(Boolean);
+
+            // Busca todas las tarjetas de muebles.
+            const contenedores = document.querySelectorAll(".mueble-container");
+
+            // Inicializa contador visible.
+            let visibles = 0;
+
+            // Recorre cada tarjeta y decide si mostrarla.
+            contenedores.forEach(div => {
+                const texto = div.dataset.universal || "";
+                const mostrar = filtros.every(filtro => texto.includes(filtro));
+                div.style.display = mostrar ? "" : "none";
+                if (mostrar) visibles++;
+            });
+
+            // Oculta bloques de OP que quedaron sin muebles visibles.
+            document.querySelectorAll(".op-block").forEach(block => {
+                const hayVisible = [...block.querySelectorAll(".mueble-container")].some(card => card.style.display !== "none");
+                block.style.display = hayVisible ? "" : "none";
+            });
+
+            // Actualiza contadores.
+            actualizarStats(visibles, contenedores.length);
+        }
+
+        // Limpia los filtros y vuelve a mostrar todos los muebles.
+        function limpiarFiltros() {
+            // Vacia los cuatro campos de filtro.
+            ["f1", "f2", "f3", "f4"].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+
+            // Reaplica el filtro sin condiciones.
+            filtrarUniversal();
+        }
+
+        // Valida la estructura de todos los muebles renderizados.
+        function validarTodo() {
+            // Marca que la vista ya fue validada.
+            VALIDADO = true;
+
+            // Contadores de resultado.
+            let countOk = 0;
+            let countErr = 0;
+
+            // Recorre cada tarjeta de mueble.
+            document.querySelectorAll(".mueble-container").forEach(card => {
+                // Limpia estado anterior.
+                limpiarEstadoValidacion(card);
+
+                // Ejecuta validacion de una tarjeta.
+                const errores = validarMueble(card);
+
+                // Aplica estado visual segun resultado.
+                if (errores.length > 0) {
+                    card.classList.add("err");
+                    mostrarErroresEnTarjeta(card, errores);
+                    countErr++;
+                } else {
+                    card.classList.add("ok");
+                    countOk++;
+                }
+
+                // Actualiza badge de estado.
+                actualizarBadgeEstado(card, errores.length === 0);
+            });
+
+            // Actualiza chips de resumen.
+            chipOkEl.textContent = `${countOk} OK`;
+            chipErrEl.textContent = `${countErr} con errores`;
+            chipOkEl.style.display = countOk > 0 ? "" : "none";
+            chipErrEl.style.display = countErr > 0 ? "" : "none";
+        }
+
+        // Valida un solo mueble y devuelve lista de errores.
+        function validarMueble(card) {
+            // Guarda errores encontrados.
+            const errores = [];
+
+            // Lee codigo del mueble.
+            const cod = (card.dataset.codpuro || "").toUpperCase();
+
+            // Lee tipo segun primera letra del codigo.
+            const tipo = cod.charAt(0);
+
+            // Lee ancho detectado desde el codigo.
+            const ancho = Number.parseInt(card.dataset.ancho, 10) || 0;
+
+            // Calcula profundidad esperada segun tipo de modulo.
+            const profEsperada = obtenerProfundidadEsperada(tipo);
+
+            // Recorre filas de piezas.
+            card.querySelectorAll("tbody tr").forEach((tr, index) => {
+                // Toma los valores principales de la fila.
+                const pieza = textoCelda(tr, "cod_pieza").toUpperCase();
+                const medida1 = numeroCelda(tr, "medida1");
+                const medida2 = numeroCelda(tr, "medida2");
+                const numeroFila = index + 1;
+
+                // Si no hay codigo de pieza, no valida esa fila.
+                if (!pieza) return;
+
+                // Indica si esta fila tiene error.
+                let filaConError = false;
+
+                // Valida ancho de base, techo y ajustes.
+                if (esPiezaDeAncho(pieza) && ancho > 0) {
+                    const esperado = ancho - DESCUENTO_ANCHO;
+                    const coincide = coincideMedida(medida1, esperado) || coincideMedida(medida2, esperado);
+
+                    if (!coincide) {
+                        errores.push(`Fila ${numeroFila}: ${pieza} deberia medir aproximadamente ${esperado} mm en ancho. Medidas encontradas: ${medida1 || "-"} / ${medida2 || "-"} mm.`);
+                        filaConError = true;
+                    }
+                }
+
+                // Valida profundidad en piezas estructurales.
+                if (esPiezaEstructural(pieza) && profEsperada > 0) {
+                    const coincide = coincideMedida(medida1, profEsperada) || coincideMedida(medida2, profEsperada);
+
+                    if (!coincide) {
+                        errores.push(`Fila ${numeroFila}: ${pieza} deberia tener profundidad aproximada de ${profEsperada} mm. Medidas encontradas: ${medida1 || "-"} / ${medida2 || "-"} mm.`);
+                        filaConError = true;
+                    }
+                }
+
+                // Marca visualmente la fila si fallo alguna regla.
+                if (filaConError) tr.classList.add("row-error");
+            });
+
+            // Si no se pudo detectar ancho, agrega advertencia solo para codigos no vacios.
+            if (cod && cod !== "SIN CODIGO" && ancho === 0) {
+                errores.push(`No se pudo detectar el ancho desde el codigo "${cod}". Revisa el formato del codigo de mueble.`);
+            }
+
+            // Devuelve todos los errores encontrados.
+            return errores;
+        }
+
+        // Limpia clases y mensajes de una validacion anterior.
+        function limpiarEstadoValidacion(card) {
+            // Quita clases de estado.
+            card.classList.remove("err", "ok");
+
+            // Quita marcas de filas con error.
+            card.querySelectorAll(".row-error").forEach(row => row.classList.remove("row-error"));
+
+            // Limpia lista de errores.
+            const validationList = card.querySelector(".validation-list");
+            validationList.textContent = "";
+            validationList.classList.remove("show");
+
+            // Quita badge de estado anterior.
+            const existingBadge = card.querySelector(".badge-status");
+            if (existingBadge) existingBadge.remove();
+        }
+
+        // Muestra errores dentro de la tarjeta.
+        function mostrarErroresEnTarjeta(card, errores) {
+            // Busca la caja de validacion.
+            const validationList = card.querySelector(".validation-list");
+
+            // Crea una lista para los errores.
+            const ul = document.createElement("ul");
+
+            // Agrega cada error como item.
+            errores.forEach(error => {
+                const li = document.createElement("li");
+                li.textContent = error;
+                ul.appendChild(li);
+            });
+
+            // Inserta lista en la caja.
+            validationList.appendChild(ul);
+
+            // Muestra la caja.
+            validationList.classList.add("show");
+        }
+
+        // Actualiza el badge OK/Error de una tarjeta.
+        function actualizarBadgeEstado(card, ok) {
+            // Busca contenedor de badges.
+            const badgesEl = card.querySelector(".badges");
+
+            // Crea badge nuevo.
+            const badge = document.createElement("span");
+
+            // Asigna clases segun estado.
+            badge.className = `badge ${ok ? "badge-ok" : "badge-err"} badge-status`;
+
+            // Asigna texto visible.
+            badge.textContent = ok ? "OK" : "Error";
+
+            // Agrega badge a la tarjeta.
+            badgesEl.appendChild(badge);
+        }
+
+        // Devuelve profundidad esperada segun tipo de mueble.
+        function obtenerProfundidadEsperada(tipo) {
+            // Modulo alto.
+            if (tipo === "A") return 320;
+
+            // Modulo suspendido.
+            if (tipo === "S") return 530;
+
+            // Modulos bajos, auxiliares y otros por defecto.
+            return 580;
+        }
+
+        // Detecta si una pieza debe validar ancho.
+        function esPiezaDeAncho(pieza) {
+            // Base, techo y ajustes suelen depender del ancho total.
+            return pieza.includes("BASE") || pieza.includes("TECHO") || pieza.startsWith("AJ_");
+        }
+
+        // Detecta si una pieza debe validar profundidad.
+        function esPiezaEstructural(pieza) {
+            // Piezas estructurales principales.
+            return pieza.startsWith("AJ_") || pieza.includes("BAS") || pieza.includes("TEC") || pieza.startsWith("LAT");
+        }
+
+        // Compara una medida con una esperada usando tolerancia.
+        function coincideMedida(valor, esperado) {
+            // Si el valor no es numerico, no coincide.
+            if (!Number.isFinite(valor)) return false;
+
+            // Devuelve true si esta dentro de la tolerancia.
+            return Math.abs(valor - esperado) <= TOLERANCIA_MM;
+        }
+
+        // Obtiene texto de una celda segun su columna.
+        function textoCelda(row, col) {
+            // Busca la celda por data-col.
+            const cell = row.querySelector(`[data-col="${col}"]`);
+
+            // Devuelve texto limpio.
+            return cell ? cell.textContent.trim() : "";
+        }
+
+        // Obtiene numero de una celda segun su columna.
+        function numeroCelda(row, col) {
+            // Lee texto de celda.
+            const texto = textoCelda(row, col);
+
+            // Cambia coma decimal por punto y convierte a numero.
+            const numero = Number.parseFloat(texto.replace(",", "."));
+
+            // Devuelve numero o NaN si no se pudo convertir.
+            return Number.isFinite(numero) ? numero : NaN;
+        }
+
+        // Detecta ancho desde el codigo del mueble.
+        function detectarAncho(cod) {
+            // Normaliza el codigo.
+            const codigo = String(cod || "").toUpperCase();
+
+            // Busca patrones comunes como B60, A80, S120, EB90.
+            const match = codigo.match(/\b(?:EB|EA|ES|EX|B|A|S|X|E)(\d{2,3})\b/);
+
+            // Si no encuentra, busca el primer numero de 2 o 3 digitos.
+            const fallback = codigo.match(/(\d{2,3})/);
+
+            // Toma el numero encontrado.
+            const valor = match ? match[1] : fallback ? fallback[1] : "";
+
+            // Si no hay numero, devuelve 0.
+            if (!valor) return 0;
+
+            // Convierte codigos tipo 60 a 600 mm y 120 a 1200 mm.
+            return Number.parseInt(valor, 10) * 10;
+        }
+
+        // Construye texto de busqueda para los filtros universales.
+        function construirTextoUniversal(op, cod, nombre, items) {
+            // Une datos principales.
+            const base = [op, cod, nombre].join(" ");
+
+            // Une todos los valores de las filas.
+            const filas = items.map(row => Object.values(row).join(" ")).join(" ");
+
+            // Devuelve todo en mayusculas para comparar facil.
+            return `${base} ${filas}`.toUpperCase();
+        }
+
+        // Actualiza contadores visibles.
+        function actualizarStats(visibles, total) {
+            // Actualiza contador visible.
+            document.getElementById("vis-count").textContent = String(visibles);
+
+            // Actualiza contador total.
+            document.getElementById("total-count").textContent = String(total);
+        }
+
+        // Muestra avisos sobre columnas faltantes.
+        function mostrarAvisosDeColumnas() {
+            // Busca columnas requeridas que no se encontraron.
+            const faltantes = COLS_REQUERIDAS.filter(col => !MAPA_COLUMNAS[col]);
+
+            // Si no falta nada, oculta chip y termina.
+            if (faltantes.length === 0) {
+                chipWarnEl.style.display = "none";
+                return;
+            }
+
+            // Muestra chip de advertencia.
+            chipWarnEl.textContent = `Faltan columnas: ${faltantes.join(", ")}`;
+            chipWarnEl.style.display = "";
+
+            // Crea aviso completo.
+            const notice = crearElemento("div", "notice", `Advertencia: no se encontraron estas columnas requeridas: ${faltantes.join(", ")}. La tabla se mostrara, pero la validacion puede quedar incompleta.`);
+
+            // Inserta aviso.
+            avisosEl.appendChild(notice);
+        }
+
+        // Limpia todos los avisos generales.
+        function limpiarAvisos() {
+            // Borra avisos.
+            avisosEl.textContent = "";
+
+            // Oculta chip de advertencia.
+            chipWarnEl.style.display = "none";
+        }
+
+        // Muestra un error general en la zona de lista.
+        function mostrarErrorGeneral(mensaje) {
+            // Limpia la lista.
+            listaEl.textContent = "";
+
+            // Crea aviso visible.
+            const errorBox = crearElemento("div", "notice", mensaje);
+
+            // Inserta aviso.
+            listaEl.appendChild(errorBox);
+        }
+
+        // Muestra estado vacio reutilizable.
+        function mostrarEstadoVacio(titulo, texto) {
+            // Limpia la lista.
+            listaEl.textContent = "";
+
+            // Crea contenedor vacio.
+            const empty = crearElemento("div", "empty");
+
+            // Crea titulo.
+            const h3 = document.createElement("h3");
+            h3.textContent = titulo;
+
+            // Crea parrafo.
+            const p = document.createElement("p");
+            p.textContent = texto;
+
+            // Une elementos.
+            empty.appendChild(h3);
+            empty.appendChild(p);
+            listaEl.appendChild(empty);
+        }
+
+        // Crea un elemento HTML seguro con clase y texto opcionales.
+        function crearElemento(tag, className = "", text = "") {
+            // Crea el elemento indicado.
+            const el = document.createElement(tag);
+
+            // Agrega clases si existen.
+            if (className) el.className = className;
+
+            // Agrega texto seguro si existe.
+            if (text) el.textContent = text;
+
+            // Devuelve elemento listo.
+            return el;
+        }
+
+        // Orden natural para mezclar texto y numeros de forma mas humana.
+        function compararNatural(a, b) {
+            // Usa comparacion local con sensibilidad numerica.
+            return String(a).localeCompare(String(b), "es", { numeric: true, sensitivity: "base" });
+        }
+    </script>
+</body>
+</html>
