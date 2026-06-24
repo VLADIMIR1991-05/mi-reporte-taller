@@ -13,7 +13,7 @@
         button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         h1.op-title { color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
         .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .desc-tag { font-size: 0.85em; color: #7f8c8d; font-style: italic; display: block; margin-top: -10px; margin-bottom: 10px; }
+        .desc-tag { font-size: 0.85em; color: #7f8c8d; font-style: italic; display: block; margin-top: -10px; margin-bottom: 10px; font-weight: bold; }
         .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
         .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
         .op-tag { font-size: 11px; color: #fff; background: #95a5a6; padding: 2px 6px; border-radius: 4px; float: right; }
@@ -40,20 +40,20 @@
     <div id="lista"></div>
 
     <script>
-        // Base de datos integrada de nomenclaturas
         const DB_NOMENCLATURA = {
-            'B': 'Módulo Bajo', 'A': 'Módulo Alto', 'S': 'Módulo Suspendido', 
-            'X': 'Módulo Auxiliar', 'E': 'Módulo Esquinero', 'ESTR': 'Estructura',
-            'MES': 'Mesón', 'GOT': 'Desayunador Gota', 'LB': 'Lateral Bajo',
-            'LA': 'Lateral Alto', 'LX': 'Lateral Auxiliar', 'MH': 'Módulo Horno',
-            'RF': 'Refrigerador', 'REP': 'Repisa'
+            'B': 'Módulo Bajo', 'A': 'Módulo Alto', 'S': 'Módulo Suspendido', 'X': 'Módulo Auxiliar', 'E': 'Esquinero',
+            'ESTR-DES': 'Estructura para desayunador', 'MES': 'Mesón', 'PM': 'Premesón', 'GOTI': 'Desayunador Gota Izquierdo', 'GOTD': 'Desayunador Gota Derecho',
+            'DIAM': 'Desayunador Diamante', 'LB': 'Lateral Bajo', 'LA': 'Lateral Alto', 'LX': 'Lateral Auxiliar', 'RF': 'Refrigerador',
+            'TAPA': 'Tapa', 'REP': 'Repisa', 'MH': 'Módulo Horno', 'HS': 'Horno Simple', 'HC': 'Horno Combinado', 'HT': 'Horno Triple',
+            'TI': 'Tiradera Interna', 'AI': 'Asiento Iluminado', 'AB-SIM': 'Abatible Simple', 'AB-COM': 'Abatible Compás', 'AB-PLE': 'Abatible Plegable',
+            'ACK': 'Accesorio Kessebohmer', 'ACF': 'Accesorio FGV', 'ACV': 'Accesorio Vibo', 'ACH': 'Accesorio Hengel', 'ACP': 'Accesorio Peka',
+            'MET': 'Estructura Metálica Loft', 'LIN': 'Line', 'CIL-CT': 'Cenefa de iluminación', 'PEL-CT': 'Perfil superior puerta', 'AU': 'Detalle Aurora',
+            '-TPM': 'Tapa Premesón', '-PUSH': 'Puerta Push', '-LSP': 'Luz LED Spot', '-LBA': 'Luz LED Base', '-LSU': 'Luz LED Superior'
         };
 
         function descifrarNombre(cod) {
-            let tipo = cod.substring(0, 4); // Prueba primero con prefijos de 4 letras
-            if (DB_NOMENCLATURA[tipo]) return DB_NOMENCLATURA[tipo];
-            tipo = cod[0]; // Luego con 1 sola letra
-            return DB_NOMENCLATURA[tipo] || "Elemento Decorativo/Complemento";
+            let prefijo = cod.split('-')[0];
+            return DB_NOMENCLATURA[prefijo] || DB_NOMENCLATURA[cod[0]] || "Módulo / Componente General";
         }
 
         document.getElementById('upload').addEventListener('change', function(e) {
