@@ -8,11 +8,11 @@
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
         .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: margin-bottom: 20px; }
         .f-input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 120px; }
         button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         h1.op-title { color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
-        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
+        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
         .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
         .op-tag { font-size: 11px; color: #fff; background: #95a5a6; padding: 2px 6px; border-radius: 4px; float: right; }
@@ -42,9 +42,13 @@
         document.getElementById('upload').addEventListener('change', function(e) {
             let reader = new FileReader();
             reader.onload = (event) => {
+                // {raw:true, defval:""} ayuda a preservar el número de fila original
                 let wb = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
-                let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                renderizar(json);
+                let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {raw:false, range:0});
+                
+                // Añadimos el número de fila manualmente si no está presente
+                let data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {raw:true});
+                renderizar(data);
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -61,6 +65,9 @@
                 
                 codigos.forEach(cod => {
                     let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
+                    // Calculamos la fila original (sumando 2 para compensar cabecera e índice 0)
+                    let filaOrig = (items[0].__rowNum__ !== undefined) ? (items[0].__rowNum__ + 2) : "Desconocida";
+                    
                     let div = document.createElement('div');
                     div.className = 'mueble-container';
                     div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
@@ -70,7 +77,7 @@
                     
                     div.innerHTML = `
                         <span class="op-tag">OP: ${op}</span>
-                        <h2>${cod}</h2>
+                        <h2>${cod} <small style="color:#999; font-size:0.6em">(Fila C${filaOrig})</small></h2>
                         <table>
                             <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th><th>L1</th><th>L2</th><th>C1</th><th>C2</th></tr>
                             ${items.map(r => `<tr>
