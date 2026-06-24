@@ -1,45 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Validador de Despiece - Madeval</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: #333; }
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-        .f-input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 120px; }
-        button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        h1.op-title { color: var(--primary); margin-top: 30px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
-        .mueble-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 8px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .esp-tag { color: #e74c3c; font-weight: 800; font-size: 0.75em; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .desc-tag { font-size: 0.9em; color: #d35400; font-weight: bold; display: block; margin-bottom: 10px; }
-        .err { border-left-color: #e74c3c !important; background: #fff5f5 !important; }
-        .ok { border-left-color: #27ae60 !important; background: #f0fff4 !important; }
-        .op-tag { font-size: 11px; color: #fff; background: #95a5a6; padding: 2px 6px; border-radius: 4px; float: right; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #f8f9fa; padding: 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #eee; }
-        td { padding: 8px; border: 1px solid #eee; text-align: center; font-size: 13px; }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <h1>Validador de Despiece Maestro</h1>
-        <input type="file" id="upload" accept=".xlsx, .csv">
-    </div>
-
-    <div class="controls">
-        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 1...">
-        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 2...">
-        <input type="text" class="f-input" onkeyup="filtrarUniversal()" placeholder="Filtro 3...">
-        <button onclick="validarTodo()">VALIDAR ESTRUCTURA</button>
-    </div>
-
-    <div id="lista"></div>
-
-    <script>
+<script>
         const DB_NOMENCLATURA = {
             'ESTR-DES-A1': 'Estructura desayunador A1', 'ESTR-DES-A2': 'Estructura desayunador A2', 'ESTR-DES-B1': 'Estructura desayunador B1',
             'PM': 'Premesón tablero crudo', 'MES': 'Mesón', 'DIAM': 'Desayunador Diamante', 'GOTI-150P240': 'Desayunador Gota Izq 150x240',
@@ -50,8 +9,24 @@
             'TAPA': 'Tapa', 'REP': 'Repisa', 'LB': 'Lateral Bajo', 'LA': 'Lateral Alto', 'LX': 'Lateral Auxiliar', 'PG': 'Puerta Giratoria EXL'
         };
 
+        // CORRECCIÓN: Búsqueda flexible por si el código de Excel trae texto extra (Ej: "B-HS-60")
         function obtenerNombre(cod) {
-            return DB_NOMENCLATURA[cod] || "Elemento no catalogado";
+            if (!cod) return "Código vacío";
+            let codigoLimpio = cod.toUpperCase().trim();
+            
+            // 1. Intento de coincidencia exacta
+            if (DB_NOMENCLATURA[codigoLimpio]) {
+                return DB_NOMENCLATURA[codigoLimpio];
+            }
+            
+            // 2. Intento de coincidencia parcial
+            for (let clave in DB_NOMENCLATURA) {
+                if (codigoLimpio.includes(clave)) {
+                    return DB_NOMENCLATURA[clave];
+                }
+            }
+            
+            return "Elemento no catalogado";
         }
 
         document.getElementById('upload').addEventListener('change', function(e) {
@@ -69,36 +44,44 @@
             lista.innerHTML = "";
             let ops = [...new Set(data.map(r => r.op))];
             
+            let htmlAcumulado = ""; // Optimización de rendimiento
+            
             ops.forEach(op => {
-                lista.innerHTML += `<h1 class="op-title">OP: ${op}</h1>`;
+                if (!op) return;
+                htmlAcumulado += `<h1 class="op-title">OP: ${op}</h1>`;
                 let mueblesEnOP = data.filter(r => r.op == op);
                 let codigos = [...new Set(mueblesEnOP.map(r => r.cod_mueble))];
                 
                 codigos.forEach(cod => {
+                    if (!cod) return;
                     let items = mueblesEnOP.filter(r => r.cod_mueble == cod);
                     let esEspecial = cod.toUpperCase().includes('ESP') || cod.toUpperCase().includes('ESPECIAL');
                     let nombreDescifrado = obtenerNombre(cod);
                     
-                    let div = document.createElement('div');
-                    div.className = 'mueble-container';
-                    div.dataset.ancho = (cod.match(/[A-Z](\d+)/)) ? parseInt(cod.match(/[A-Z](\d+)/)[1]) * 10 : 0;
-                    div.dataset.universal = (items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod + " " + nombreDescifrado).toUpperCase();
+                    // Extraer ancho latente para guardarlo en el dataset
+                    let matchAncho = cod.match(/[A-Za-z](\d+)/);
+                    let anchoCalculado = matchAncho ? parseInt(matchAncho[1]) * 10 : 0;
                     
-                    div.innerHTML = `
-                        <span class="op-tag">OP: ${op}</span>
-                        ${esEspecial ? '<span class="esp-tag">[MÓDULO ESPECIAL]</span>' : ''}
-                        <h2>${cod} <small style="color:#999; font-size:0.6em">(Fila C${(items[0].__rowNum__ || 0) + 2})</small></h2>
-                        <span class="desc-tag">${nombreDescifrado}</span>
-                        <table>
-                            <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th></tr>
-                            ${items.map(r => `<tr>
-                                <td>${r['Tipo ']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
-                                <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
-                            </tr>`).join('')}
-                        </table>`;
-                    lista.appendChild(div);
+                    // Concatenamos el contenido para búsqueda universal
+                    let textoUniversal = (items.map(r => Object.values(r).join(' ')).join(' ') + " " + cod + " " + nombreDescifrado).toUpperCase();
+                    
+                    htmlAcumulado += `
+                        <div class="mueble-container" data-ancho="${anchoCalculado}" data-universal="${textoUniversal}" data-codpuro="${cod}">
+                            <span class="op-tag">OP: ${op}</span>
+                            ${esEspecial ? '<span class="esp-tag">[MÓDULO ESPECIAL]</span>' : ''}
+                            <h2><span class="cod-mueble-text">${cod}</span> <small style="color:#999; font-size:0.6em">(Fila C${(items[0].__rowNum__ || 0) + 2})</small></h2>
+                            <span class="desc-tag">${nombreDescifrado}</span>
+                            <table>
+                                <tr><th>Tipo</th><th>Job</th><th>Pieza</th><th>Cant</th><th>M1</th><th>M2</th></tr>
+                                ${items.map(r => `<tr>
+                                    <td>${r['Tipo ']||r['Tipo']||''}</td><td>${r.job||''}</td><td class='pcod'>${r.cod_pieza||''}</td>
+                                    <td>${r.cant_piezas||''}</td><td class='med1'>${r.medida1||0}</td><td class='med2'>${r.medida2||0}</td>
+                                </tr>`).join('')}
+                            </table>
+                        </div>`;
                 });
             });
+            lista.innerHTML = htmlAcumulado;
         }
 
         function filtrarUniversal() {
@@ -111,28 +94,43 @@
         function validarTodo() {
             document.querySelectorAll('.mueble-container').forEach(div => {
                 let error = false;
-                let codMueble = div.querySelector('h2').innerText;
-                let tipo = codMueble[0];
+                div.classList.remove('err', 'ok'); // Limpiar estados anteriores
+                
+                // CORRECCIÓN: Leer el código puro desde el dataset para evitar el texto del tag <small>
+                let codMueble = div.dataset.codpuro.toUpperCase();
+                let tipo = codMueble[0]; 
                 let anchoTotal = parseInt(div.dataset.ancho);
+                
+                // Definición de profundidades estándar según tipo de módulo
                 let profEsperada = (tipo === 'A') ? 320 : (tipo === 'S') ? 530 : 580;
 
-                div.querySelectorAll('tr').forEach(tr => {
-                    if(!tr.cells[2] || tr.cells[2].innerText === 'Pieza') return;
-                    let p = tr.cells[2].innerText.toUpperCase();
+                div.querySelectorAll('tr').forEach((tr, index) => {
+                    if(index === 0) return; // Ignorar la cabecera th
+                    
+                    let cellPieza = tr.cells[2];
+                    if(!cellPieza) return;
+                    
+                    let p = cellPieza.innerText.toUpperCase();
                     let m1 = parseInt(tr.cells[4].innerText) || 0;
                     let m2 = parseInt(tr.cells[5].innerText) || 0;
-                    let descuento = 37; // Descuento estándar
+                    let descuento = 37; 
 
+                    // Validación de Anchos en Base y Techo
                     if (p.includes('BASE') || p.includes('TECHO') || p.includes('AJ_')) {
-                        if (m1 !== (anchoTotal - descuento) && m2 !== (anchoTotal - descuento)) error = true;
+                        if (anchoTotal > 0 && m1 !== (anchoTotal - descuento) && m2 !== (anchoTotal - descuento)) {
+                            error = true;
+                        }
                     }
+                    
+                    // Validación de Profundidades en Laterales y Estructuras base
                     if (p.includes('AJ_') || p.includes('BAS') || p.includes('TEC') || p.startsWith('L')) {
-                        if (m1 !== profEsperada && m2 !== profEsperada) error = true;
+                        if (m1 !== profEsperada && m2 !== profEsperada) {
+                            error = true;
+                        }
                     }
                 });
+                
                 div.classList.add(error ? 'err' : 'ok');
             });
         }
     </script>
-</body>
-</html>
