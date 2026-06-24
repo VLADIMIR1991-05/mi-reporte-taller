@@ -59,7 +59,7 @@
                 if (DB_NOMENCLATURA[intento]) return DB_NOMENCLATURA[intento];
             }
             // 2. Buscar por inicial simple
-            return DB_NOMENCLATURA[cod[0]] || "Módulo / Elemento Especial";
+            return DB_NOMENCLATURA[cod[0]] || "DB_NOMENCLATURA";
         }
 
         document.getElementById('upload').addEventListener('change', function(e) {
